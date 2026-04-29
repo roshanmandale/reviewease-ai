@@ -32,18 +32,33 @@ function buildPrompt(
 
   const guide = toneGuide[tone] ?? toneGuide['Friendly'];
 
-  // Varied human openers so reviews don't all start the same way
-  const openerHint =
-    tone === 'Hindi'
-      ? 'शुरुआत अलग-अलग तरीके से करें।'
-      : tone === 'Hinglish'
-      ? 'Start differently each time — yaar, bhai, sach mein, etc.'
-      : 'Start each review differently — avoid starting all with "I".';
+  // Random seed phrase forces the model to generate different output every call
+  const seeds = [
+    'focus on food quality',
+    'focus on staff behavior',
+    'focus on ambience and atmosphere',
+    'focus on value for money',
+    'focus on speed of service',
+    'focus on cleanliness',
+    'focus on overall experience',
+    'focus on taste and freshness',
+  ];
+  const seed = seeds[Math.floor(Math.random() * seeds.length)];
 
-  return `Write 3 real customer reviews for "${businessName}" (${category}). Rating: ${stars}
+  // Random perspective shifts so reviews never start the same way
+  const perspectives =
+    tone === 'Hindi'
+      ? ['पहली बार गया था', 'दोस्त के साथ गया', 'परिवार के साथ गया', 'अकेले गया था']
+      : tone === 'Hinglish'
+      ? ['Pehli baar gaya tha', 'Dost ke saath gaya', 'Family ke saath tha', 'Regular customer hoon']
+      : ['First time visitor', 'Regular customer', 'Came with family', 'Visited with friends', 'Solo visit'];
+  const perspective = perspectives[Math.floor(Math.random() * perspectives.length)];
+
+  return `Write 3 DIFFERENT customer reviews for "${businessName}" (${category}). Rating: ${stars}
 Tone: ${guide}
-${openerHint}
-Rules: under 20 words each, human & natural, no spam words, all 3 unique.
+Angle: ${seed}. Perspective: ${perspective}.
+Each review must start with a DIFFERENT word. No two reviews can begin the same way.
+Rules: under 20 words each, natural human language, no spam words, all 3 unique and varied.
 Reply ONLY with this JSON, nothing else:
 [{"text":"..."},{"text":"..."},{"text":"..."}]`;
 }
@@ -107,16 +122,16 @@ async function generateWithNim(
         messages: [
           {
             role: 'system',
-            content: 'You write short customer reviews. Output valid JSON only. No explanation.',
+            content: 'You write short customer reviews. Output valid JSON only. No explanation. Every response must be completely different.',
           },
           {
             role: 'user',
             content: buildPrompt(businessName, category, rating, tone),
           },
         ],
-        temperature: 0.75,
-        top_p: 0.8,
-        max_tokens: 180,   // 3 reviews × ~20 words × ~5 tokens = ~300 max, 180 is enough for JSON
+        temperature: 1.0,
+        top_p: 0.95,
+        max_tokens: 180,
         stream: false,
       }),
     },
@@ -160,15 +175,15 @@ async function generateWithNimLlama(
         messages: [
           {
             role: 'system',
-            content: 'You write short customer reviews. Output valid JSON only. No explanation.',
+            content: 'You write short customer reviews. Output valid JSON only. No explanation. Every response must be completely different.',
           },
           {
             role: 'user',
             content: buildPrompt(businessName, category, rating, tone),
           },
         ],
-        temperature: 0.7,
-        top_p: 0.8,
+        temperature: 1.0,
+        top_p: 0.95,
         max_tokens: 180,
         stream: false,
       }),
