@@ -58,8 +58,17 @@ export function BusinessForm({ initial, onSubmit, loading }: BusinessFormProps) 
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = 'Business name is required';
     if (!form.slug.trim()) e.slug = 'Slug is required';
-    if (!form.placeId.trim()) e.placeId = 'Google Place ID is required';
     if (!form.city.trim()) e.city = 'City is required';
+
+    // Place ID validation
+    if (!form.placeId.trim()) {
+      e.placeId = 'Google Place ID is required';
+    } else if (form.placeId.trim().startsWith('http')) {
+      e.placeId = 'This looks like a URL, not a Place ID. A Place ID looks like: ChIJN1t_tDeuEmsRUsoyG83frY4';
+    } else if (form.placeId.trim().length < 10) {
+      e.placeId = 'Place ID is too short. It should be a long alphanumeric string.';
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -111,15 +120,42 @@ export function BusinessForm({ initial, onSubmit, loading }: BusinessFormProps) 
             onChange={(e) => set('category', e.target.value)}
             options={CATEGORIES.map((c) => ({ value: c, label: c }))}
           />
-          <Input
-            label="Google Place ID *"
-            value={form.placeId}
-            onChange={(e) => set('placeId', e.target.value)}
-            placeholder="ChIJN1t_tDeuEmsRUsoyG83frY4"
-            error={errors.placeId}
-            hint="Find it on Google Maps → Share → Embed a map"
-            leftIcon={<LinkIcon size={14} />}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Google Place ID *
+            </label>
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <LinkIcon size={14} />
+              </div>
+              <input
+                value={form.placeId}
+                onChange={(e) => set('placeId', e.target.value)}
+                placeholder="ChIJN1t_tDeuEmsRUsoyG83frY4"
+                className={`w-full rounded-xl border bg-white pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200 ${errors.placeId ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 hover:border-gray-300'}`}
+              />
+            </div>
+            {errors.placeId ? (
+              <p className="mt-1.5 text-xs text-red-500">{errors.placeId}</p>
+            ) : (
+              <div className="mt-2 bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+                <p className="font-semibold">⚠️ Do NOT paste a Google Maps link here</p>
+                <p>A Place ID looks like: <span className="font-mono bg-amber-100 px-1 rounded">ChIJN1t_tDeuEmsRUsoyG83frY4</span></p>
+                <p>
+                  Get yours →{' '}
+                  <a
+                    href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-medium text-amber-900"
+                  >
+                    Google Place ID Finder ↗
+                  </a>
+                  {' '}— search your business name and copy the ID shown.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

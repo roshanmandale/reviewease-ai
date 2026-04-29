@@ -35,7 +35,21 @@ export function formatNumber(num: number): string {
 }
 
 export function getGoogleReviewUrl(placeId: string): string {
-  return `https://search.google.com/local/writereview?placeid=${placeId}`;
+  // Guard: if someone stored a URL instead of a Place ID, extract it or show error
+  const trimmed = placeId.trim();
+
+  // If it looks like a real Place ID (starts with ChIJ or similar alphanumeric), use it directly
+  if (/^[A-Za-z0-9_\-]{10,}$/.test(trimmed)) {
+    return `https://search.google.com/local/writereview?placeid=${trimmed}`;
+  }
+
+  // If someone pasted a full Google Maps URL, redirect to Google Maps search instead
+  if (trimmed.startsWith('http')) {
+    return trimmed; // open whatever URL they stored
+  }
+
+  // Fallback — still try with what we have
+  return `https://search.google.com/local/writereview?placeid=${trimmed}`;
 }
 
 export function copyToClipboard(text: string): Promise<void> {
