@@ -173,9 +173,6 @@ export default function BusinessesPage() {
                 business={biz}
                 onViewQR={setQrBusiness}
                 onDelete={setDeleteTarget}
-                onEdit={(b) => {
-                  window.location.href = `/dashboard/businesses/${b.id}/edit`;
-                }}
               />
             </motion.div>
           ))}

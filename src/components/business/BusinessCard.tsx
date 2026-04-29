@@ -2,21 +2,20 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  Building2,
   QrCode,
   BarChart3,
   Edit,
   Trash2,
-  ExternalLink,
   Copy,
   Check,
 } from 'lucide-react';
 import { Business } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { cn, getInitials } from '@/lib/utils';
+import { getInitials } from '@/lib/utils';
 
 interface BusinessCardProps {
   business: Business;
@@ -25,7 +24,8 @@ interface BusinessCardProps {
   onViewQR?: (business: Business) => void;
 }
 
-export function BusinessCard({ business, onEdit, onDelete, onViewQR }: BusinessCardProps) {
+export function BusinessCard({ business, onDelete, onViewQR }: BusinessCardProps) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
 
   const reviewUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/b/${business.slug}`;
@@ -102,15 +102,18 @@ export function BusinessCard({ business, onEdit, onDelete, onViewQR }: BusinessC
               Analytics
             </Button>
           </Link>
+          {/* Edit — navigates to /dashboard/businesses/[id]/edit */}
           <button
-            onClick={() => onEdit?.(business)}
+            onClick={() => router.push(`/dashboard/businesses/${business.id}/edit`)}
             className="p-2 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+            title="Edit business"
           >
             <Edit size={15} />
           </button>
           <button
             onClick={() => onDelete?.(business.id)}
             className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            title="Delete business"
           >
             <Trash2 size={15} />
           </button>
