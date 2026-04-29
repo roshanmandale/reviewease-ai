@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users — only the owner can read/write their own profile
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Businesses — owner can manage; public can read active ones
+    match /businesses/{businessId} {
+      allow read: if resource.data.active == true;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+      allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Scan logs — anyone can create (customer scans); only auth users can read
+    match /scan_logs/{id} {
+      allow create: if true;
+      allow read: if request.auth != null;
+    }
+
+    // Review clicks — anyone can create; only auth users can read
+    match /review_clicks/{id} {
+      allow create: if true;
+      allow read: if request.auth != null;
+    }
+  }
+}
