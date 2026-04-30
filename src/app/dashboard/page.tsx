@@ -20,6 +20,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { InstallAppCard } from '@/components/ui/InstallAppCard';
+import { DataRetentionBanner } from '@/components/ui/DataRetentionBanner';
 import { formatNumber } from '@/lib/utils';
 import { Shield } from 'lucide-react';
 import {
@@ -102,6 +103,11 @@ export default function DashboardPage() {
             </Button>
           </Link>
         </motion.div>
+      )}
+
+      {/* Data retention warning banners */}
+      {!bizLoading && businesses.length > 0 && user?.uid && (
+        <DataRetentionBanner businesses={businesses} ownerUid={user.uid} />
       )}
 
       {/* Install App card — shown to owners on mobile */}

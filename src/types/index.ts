@@ -42,8 +42,25 @@ export interface Business {
   logoUrl: string;
   brandColor: string;
   active: boolean;
+  // Data retention fields
+  lastReportGeneratedAt?: string;
+  nextDeletionDate?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface BusinessReport {
+  id: string;
+  businessId: string;
+  businessName: string;
+  ownerUid: string;
+  periodStart: string;
+  periodEnd: string;
+  totalScans: number;
+  totalClicks: number;
+  conversionRate: number;
+  pdfUrl: string;
+  generatedAt: string;
 }
 
 export type ReviewTone = 'Professional' | 'Friendly' | 'Hindi' | 'Hinglish' | 'Short';

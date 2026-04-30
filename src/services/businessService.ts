@@ -34,6 +34,14 @@ function docToBusiness(id: string, data: Record<string, unknown>): Business {
     logoUrl: (data.logoUrl as string) || '',
     brandColor: (data.brandColor as string) || '#6366f1',
     active: Boolean(data.active),
+    lastReportGeneratedAt:
+      data.lastReportGeneratedAt instanceof Timestamp
+        ? data.lastReportGeneratedAt.toDate().toISOString()
+        : (data.lastReportGeneratedAt as string) || undefined,
+    nextDeletionDate:
+      data.nextDeletionDate instanceof Timestamp
+        ? data.nextDeletionDate.toDate().toISOString()
+        : (data.nextDeletionDate as string) || undefined,
     createdAt:
       data.createdAt instanceof Timestamp
         ? data.createdAt.toDate().toISOString()

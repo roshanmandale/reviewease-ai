@@ -17,6 +17,7 @@ import {
   Plus,
   Shield,
   Download,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
@@ -28,6 +29,7 @@ const ownerNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/businesses', label: 'Businesses', icon: Building2 },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/dashboard/reports', label: 'Reports', icon: FileText },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 

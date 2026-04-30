@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   AreaChart,
@@ -17,12 +18,13 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { TrendingUp, QrCode, Star, Percent, Smartphone, Monitor, Tablet } from 'lucide-react';
+import { TrendingUp, QrCode, Star, Percent, Smartphone, Monitor, Tablet, Clock, FileText } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useBusinesses } from '@/hooks/useBusinesses';
 import { useAuth } from '@/lib/auth-context';
 import { getReviewClicks, getScanLogs } from '@/services/logService';
 import { StatCard } from '@/components/ui/StatCard';
+import { Button } from '@/components/ui/Button';
 import { formatNumber } from '@/lib/utils';
 
 const DEVICE_COLORS = ['#7c3aed', '#6366f1', '#a78bfa'];
@@ -142,21 +144,39 @@ export default function AnalyticsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
           <p className="text-gray-500 text-sm mt-1">Track your review funnel performance</p>
         </div>
-        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-          {([7, 14, 30] as const).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                range === r
-                  ? 'bg-white shadow-sm text-violet-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {r}d
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/reports">
+            <Button variant="secondary" size="sm">
+              <FileText size={14} />
+              Reports
+            </Button>
+          </Link>
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+            {([7, 14, 30] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  range === r
+                    ? 'bg-white shadow-sm text-violet-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {r}d
+              </button>
+            ))}
+          </div>
         </div>
+      </div>
+
+      {/* Retention notice */}
+      <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4">
+        <Clock size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-amber-800">
+          <span className="font-semibold">15-day data retention:</span> Activity logs are stored for 15 days only.
+          PDF reports are generated automatically and saved permanently in{' '}
+          <Link href="/dashboard/reports" className="underline font-medium">Reports</Link>.
+        </p>
       </div>
 
       {/* Stats */}
