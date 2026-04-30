@@ -1,5 +1,6 @@
 export type Plan = 'free' | 'starter' | 'pro' | 'agency';
 export type UserRole = 'owner' | 'admin';
+export type ApprovalStatus = 'idle' | 'pending' | 'approved' | 'rejected';
 
 export interface User {
   uid: string;
@@ -7,6 +8,7 @@ export interface User {
   email: string;
   plan: Plan;
   role: UserRole;
+  approvalStatus: ApprovalStatus;
   businessLimit: number;   // max businesses this user can create
   disabled: boolean;       // admin can disable accounts
   createdAt: string;

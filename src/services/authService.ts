@@ -40,6 +40,7 @@ export async function registerUser(
     email,
     plan: 'free',
     role: 'owner',
+    approvalStatus: 'idle',
     businessLimit: PLAN_LIMITS['free'],
     disabled: false,
     createdAt: new Date().toISOString(),
@@ -74,6 +75,7 @@ export async function getUserProfile(fbUser: FirebaseUser): Promise<User> {
       email: data.email || fbUser.email || '',
       plan: data.plan || 'free',
       role: data.role || 'owner',
+      approvalStatus: data.approvalStatus || (data.role === 'admin' ? 'approved' : 'idle'),
       businessLimit: data.businessLimit ?? PLAN_LIMITS[data.plan || 'free'],
       disabled: data.disabled ?? false,
       createdAt: data.createdAt?.toDate?.()?.toISOString?.() || data.createdAt || new Date().toISOString(),
@@ -87,6 +89,7 @@ export async function getUserProfile(fbUser: FirebaseUser): Promise<User> {
     email: fbUser.email || '',
     plan: 'free',
     role: 'owner',
+    approvalStatus: 'idle',
     businessLimit: PLAN_LIMITS['free'],
     disabled: false,
     createdAt: new Date().toISOString(),
@@ -97,9 +100,16 @@ export async function getUserProfile(fbUser: FirebaseUser): Promise<User> {
 
 export async function updateUserProfile(
   uid: string,
-  updates: Partial<Pick<User, 'name' | 'email' | 'plan'>>
+  updates: Partial<Pick<User, 'name' | 'email' | 'plan' | 'approvalStatus'>>
 ): Promise<void> {
   await setDoc(doc(db, 'users', uid), updates, { merge: true });
+}
+
+/** User requests admin approval to add businesses */
+export async function requestApproval(uid: string): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), {
+    approvalStatus: 'pending',
+  });
 }
 
 // ─── Admin-only functions ─────────────────────────────────────────────────────
@@ -115,6 +125,7 @@ export async function getAllUsers(): Promise<User[]> {
       email: data.email || '',
       plan: data.plan || 'free',
       role: data.role || 'owner',
+      approvalStatus: data.approvalStatus || (data.role === 'admin' ? 'approved' : 'idle'),
       businessLimit: data.businessLimit ?? PLAN_LIMITS[data.plan || 'free'],
       disabled: data.disabled ?? false,
       createdAt: data.createdAt?.toDate?.()?.toISOString?.() || data.createdAt || '',
@@ -125,7 +136,7 @@ export async function getAllUsers(): Promise<User[]> {
 /** Update a user's role, businessLimit, or disabled status — admin only */
 export async function adminUpdateUser(
   uid: string,
-  updates: Partial<Pick<User, 'role' | 'businessLimit' | 'disabled' | 'plan'>>
+  updates: Partial<Pick<User, 'role' | 'businessLimit' | 'disabled' | 'plan' | 'approvalStatus'>>
 ): Promise<void> {
   await updateDoc(doc(db, 'users', uid), updates);
 }

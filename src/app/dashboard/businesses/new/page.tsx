@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Building2, Lock } from 'lucide-react';
+import { ArrowLeft, Building2, Lock, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useBusinesses } from '@/hooks/useBusinesses';
@@ -18,6 +18,7 @@ export default function NewBusinessPage() {
   const [saving, setSaving] = useState(false);
 
   const limit = user?.businessLimit ?? 1;
+  const isApproved = user?.approvalStatus === 'approved';
   const atLimit = !bizLoading && businesses.length >= limit;
 
   const handleSubmit = async (data: Omit<Business, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -38,6 +39,15 @@ export default function NewBusinessPage() {
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (user && user.approvalStatus !== 'approved' && !bizLoading) {
+      toast.error('You need admin approval to access this page.');
+      router.push('/dashboard/businesses');
+    }
+  }, [user, bizLoading, router]);
+
+  if (!isApproved && !bizLoading) return null;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

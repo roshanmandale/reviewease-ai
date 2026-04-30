@@ -51,7 +51,8 @@ export default function AdminPage() {
     businessLimit: number;
     plan: string;
     disabled: boolean;
-  }>({ role: 'owner', businessLimit: 1, plan: 'free', disabled: false });
+    approvalStatus: User['approvalStatus'];
+  }>({ role: 'owner', businessLimit: 1, plan: 'free', disabled: false, approvalStatus: 'idle' });
   const [saving, setSaving] = useState(false);
   const [runningRetention, setRunningRetention] = useState(false);
   const [retentionResult, setRetentionResult] = useState<{
@@ -138,6 +139,7 @@ export default function AdminPage() {
       businessLimit: u.businessLimit,
       plan: u.plan,
       disabled: u.disabled,
+      approvalStatus: u.approvalStatus,
     });
   };
 
@@ -155,6 +157,7 @@ export default function AdminPage() {
         businessLimit: editForm.businessLimit,
         plan: editForm.plan as User['plan'],
         disabled: editForm.disabled,
+        approvalStatus: editForm.approvalStatus,
       });
       setUsers((prev) =>
         prev.map((u) =>
@@ -165,6 +168,7 @@ export default function AdminPage() {
                 businessLimit: editForm.businessLimit,
                 plan: editForm.plan as User['plan'],
                 disabled: editForm.disabled,
+                approvalStatus: editForm.approvalStatus,
               }
             : u
         )
@@ -191,6 +195,18 @@ export default function AdminPage() {
       toast.success(u.disabled ? 'User enabled' : 'User disabled');
     } catch {
       toast.error('Failed to update user');
+    }
+  };
+
+  const handleUpdateStatus = async (uid: string, status: User['approvalStatus']) => {
+    try {
+      await adminUpdateUser(uid, { approvalStatus: status });
+      setUsers((prev) =>
+        prev.map((u) => (u.uid === uid ? { ...u, approvalStatus: status } : u))
+      );
+      toast.success(`User ${status} ✅`);
+    } catch {
+      toast.error('Failed to update status');
     }
   };
 
@@ -441,6 +457,7 @@ export default function AdminPage() {
                   <th className="text-left px-5 py-3 font-semibold text-gray-600">Plan</th>
                   <th className="text-left px-5 py-3 font-semibold text-gray-600">Biz Limit</th>
                   <th className="text-left px-5 py-3 font-semibold text-gray-600">Businesses</th>
+                  <th className="text-left px-5 py-3 font-semibold text-gray-600">Approval</th>
                   <th className="text-left px-5 py-3 font-semibold text-gray-600">Status</th>
                   <th className="text-left px-5 py-3 font-semibold text-gray-600">Joined</th>
                   <th className="text-right px-5 py-3 font-semibold text-gray-600">Actions</th>
@@ -450,7 +467,7 @@ export default function AdminPage() {
                 {fetching ? (
                   Array.from({ length: 3 }).map((_, i) => (
                     <tr key={i}>
-                      {Array.from({ length: 8 }).map((_, j) => (
+                      {Array.from({ length: 9 }).map((_, j) => (
                         <td key={j} className="px-5 py-4">
                           <div className="h-4 bg-gray-100 rounded animate-pulse" />
                         </td>
@@ -459,7 +476,7 @@ export default function AdminPage() {
                   ))
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center text-gray-400">
+                    <td colSpan={9} className="px-5 py-12 text-center text-gray-400">
                       <Users size={32} className="mx-auto mb-2 text-gray-200" />
                       No users found
                     </td>
@@ -574,6 +591,38 @@ export default function AdminPage() {
                             )}
                           </td>
 
+                          {/* Approval Status */}
+                          <td className="px-5 py-4">
+                             {editingUid === u.uid ? (
+                               <select
+                                 value={editForm.approvalStatus}
+                                 onChange={(e) =>
+                                   setEditForm({ ...editForm, approvalStatus: e.target.value as User['approvalStatus'] })
+                                 }
+                                 className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                               >
+                                 <option value="idle">Idle</option>
+                                 <option value="pending">Pending</option>
+                                 <option value="approved">Approved</option>
+                                 <option value="rejected">Rejected</option>
+                               </select>
+                             ) : (
+                               <Badge
+                                 variant={
+                                   u.approvalStatus === 'approved'
+                                     ? 'success'
+                                     : u.approvalStatus === 'pending'
+                                     ? 'warning'
+                                     : u.approvalStatus === 'rejected'
+                                     ? 'danger'
+                                     : 'default'
+                                 }
+                               >
+                                 {u.approvalStatus}
+                               </Badge>
+                             )}
+                           </td>
+
                           {/* Status */}
                           <td className="px-5 py-4">
                             <Badge variant={u.disabled ? 'danger' : 'success'}>
@@ -609,25 +658,43 @@ export default function AdminPage() {
                                 </>
                               ) : (
                                 <>
-                                  <button
-                                    onClick={() => startEdit(u)}
-                                    className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
-                                    title="Edit user"
-                                  >
-                                    <Edit2 size={14} />
-                                  </button>
-                                  <button
-                                    onClick={() => toggleDisable(u)}
-                                    disabled={u.uid === user?.uid}
-                                    className={`p-1.5 rounded-lg transition-colors ${
-                                      u.disabled
-                                        ? 'text-emerald-500 hover:bg-emerald-50'
-                                        : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
-                                    } disabled:opacity-30 disabled:cursor-not-allowed`}
-                                    title={u.disabled ? 'Enable user' : 'Disable user'}
-                                  >
-                                    <Ban size={14} />
-                                  </button>
+                                    {u.approvalStatus !== 'approved' && (
+                                      <button
+                                        onClick={() => handleUpdateStatus(u.uid, 'approved')}
+                                        className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
+                                        title="Approve User"
+                                      >
+                                        <Check size={14} />
+                                      </button>
+                                    )}
+                                    {u.approvalStatus !== 'rejected' && u.approvalStatus !== 'idle' && (
+                                      <button
+                                        onClick={() => handleUpdateStatus(u.uid, 'rejected')}
+                                        className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                                        title="Reject User"
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => startEdit(u)}
+                                      className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                                      title="Edit user"
+                                    >
+                                      <Edit2 size={14} />
+                                    </button>
+                                    <button
+                                      onClick={() => toggleDisable(u)}
+                                      disabled={u.uid === user?.uid}
+                                      className={`p-1.5 rounded-lg transition-colors ${
+                                        u.disabled
+                                          ? 'text-emerald-500 hover:bg-emerald-50'
+                                          : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                                      } disabled:opacity-30 disabled:cursor-not-allowed`}
+                                      title={u.disabled ? 'Enable user' : 'Disable user'}
+                                    >
+                                      <Ban size={14} />
+                                    </button>
                                 </>
                               )}
                             </div>

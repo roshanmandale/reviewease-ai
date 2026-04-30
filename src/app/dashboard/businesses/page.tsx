@@ -12,10 +12,12 @@ import { QRModal } from '@/components/business/QRModal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { requestApproval } from '@/services/authService';
 import toast from 'react-hot-toast';
+import { ShieldAlert, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 export default function BusinessesPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { businesses, loading, error, refetch, deleteBusiness } = useBusinesses(user?.uid);
 
   const [search, setSearch] = useState('');
@@ -23,6 +25,24 @@ export default function BusinessesPage() {
   const [qrBusiness, setQrBusiness] = useState<Business | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+
+  const isApproved = user?.approvalStatus === 'approved';
+  const approvalStatus = user?.approvalStatus || 'idle';
+
+  const handleRequestApproval = async () => {
+    if (!user) return;
+    setRequesting(true);
+    try {
+      await requestApproval(user.uid);
+      await refreshUser();
+      toast.success('Approval request sent to admin! 🚀');
+    } catch {
+      toast.error('Failed to send request. Please try again.');
+    } finally {
+      setRequesting(false);
+    }
+  };
 
   const filtered = businesses.filter(
     (b) =>
@@ -67,14 +87,70 @@ export default function BusinessesPage() {
           >
             <RefreshCw size={16} />
           </button>
-          <Link href="/dashboard/businesses/new">
-            <Button>
+          {isApproved ? (
+            <Link href="/dashboard/businesses/new">
+              <Button>
+                <Plus size={16} />
+                Add Business
+              </Button>
+            </Link>
+          ) : (
+            <Button disabled className="opacity-50 cursor-not-allowed">
               <Plus size={16} />
               Add Business
             </Button>
-          </Link>
+          )}
         </div>
       </div>
+
+      {/* Approval Status Banner */}
+      {!isApproved && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`rounded-2xl border p-5 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left ${
+            approvalStatus === 'pending'
+              ? 'bg-amber-50 border-amber-100 text-amber-800'
+              : approvalStatus === 'rejected'
+              ? 'bg-red-50 border-red-100 text-red-800'
+              : 'bg-violet-50 border-violet-100 text-violet-800'
+          }`}
+        >
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+            approvalStatus === 'pending'
+              ? 'bg-amber-100 text-amber-600'
+              : approvalStatus === 'rejected'
+              ? 'bg-red-100 text-red-600'
+              : 'bg-violet-100 text-violet-600'
+          }`}>
+            {approvalStatus === 'pending' ? <Clock size={24} /> :
+             approvalStatus === 'rejected' ? <XCircle size={24} /> :
+             <ShieldAlert size={24} />}
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-base">
+              {approvalStatus === 'pending' ? 'Approval Request Pending' :
+               approvalStatus === 'rejected' ? 'Account Approval Rejected' :
+               'Account Approval Required'}
+            </h3>
+            <p className="text-sm opacity-90 mt-0.5">
+              {approvalStatus === 'pending' ? 'Our admins are reviewing your account. You will be able to add businesses once approved.' :
+               approvalStatus === 'rejected' ? 'Your request to add businesses was declined. Please contact support for more details.' :
+               'You need admin approval before you can add businesses and generate QR codes.'}
+            </p>
+          </div>
+          {approvalStatus === 'idle' && (
+            <Button
+              size="sm"
+              loading={requesting}
+              onClick={handleRequestApproval}
+              className="bg-violet-600 hover:bg-violet-700 text-white border-none shadow-md shadow-violet-200"
+            >
+              Request Approval
+            </Button>
+          )}
+        </motion.div>
+      )}
 
       {/* Error state */}
       {error && (
@@ -147,11 +223,17 @@ export default function BusinessesPage() {
               <p className="text-sm text-gray-400 mt-1">
                 Add your first business to generate a QR code
               </p>
-              <Link href="/dashboard/businesses/new" className="mt-5 inline-block">
-                <Button>
-                  <Plus size={15} /> Add Your First Business
-                </Button>
-              </Link>
+              {isApproved ? (
+                <Link href="/dashboard/businesses/new" className="mt-5 inline-block">
+                  <Button>
+                    <Plus size={15} /> Add Your First Business
+                  </Button>
+                </Link>
+              ) : (
+                <p className="text-sm text-violet-500 mt-4 font-medium">
+                  Complete your approval request to get started
+                </p>
+              )}
             </>
           )}
         </div>
