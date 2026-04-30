@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: fbUser.email || '',
             plan: 'free',
             role: 'owner',
+            approvalStatus: 'idle',
             businessLimit: 1,
             disabled: false,
             createdAt: new Date().toISOString(),
