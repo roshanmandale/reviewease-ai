@@ -82,6 +82,19 @@ export async function getBusinessBySlug(slug: string): Promise<Business | null> 
 }
 
 /**
+ * Fetch ALL businesses across all owners — admin only.
+ */
+export async function getAllBusinesses(): Promise<Business[]> {
+  const snap = await getDocs(collection(db, COLLECTION));
+  const businesses = snap.docs.map((d) =>
+    docToBusiness(d.id, d.data() as Record<string, unknown>)
+  );
+  return businesses.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+/**
  * Fetch a single business by its Firestore document ID.
  */
 export async function getBusinessById(id: string): Promise<Business | null> {

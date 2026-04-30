@@ -20,6 +20,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { formatNumber } from '@/lib/utils';
+import { Shield } from 'lucide-react';
 import {
   AreaChart,
   Area,
@@ -38,7 +39,7 @@ interface ActivityItem {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { businesses, loading: bizLoading } = useBusinesses(user?.uid);
   const businessIds = businesses.map((b) => b.id);
   const { data: analyticsData, totalScans, totalClicks, conversionRate } = useAnalytics(
@@ -73,6 +74,35 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Admin quick-access banner */}
+      {isAdmin && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl p-5 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <Shield size={20} className="text-white" />
+            </div>
+            <div>
+              <p className="font-bold text-white">You are logged in as Admin</p>
+              <p className="text-violet-200 text-sm mt-0.5">
+                View all users, businesses, and platform data from the Admin Panel.
+              </p>
+            </div>
+          </div>
+          <Link href="/dashboard/admin">
+            <Button
+              size="sm"
+              className="bg-white text-violet-700 hover:bg-violet-50 border-0 shadow-lg flex-shrink-0"
+            >
+              Open Admin Panel →
+            </Button>
+          </Link>
+        </motion.div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
