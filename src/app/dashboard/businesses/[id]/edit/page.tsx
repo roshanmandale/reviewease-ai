@@ -54,6 +54,8 @@ export default function EditBusinessPage() {
         phone: data.phone,
         city: data.city,
         address: data.address,
+        about: data.about,
+        speciality: data.speciality,
         brandColor: data.brandColor,
         logoUrl: data.logoUrl,
         active: data.active,

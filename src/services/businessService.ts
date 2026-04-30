@@ -29,6 +29,8 @@ function docToBusiness(id: string, data: Record<string, unknown>): Business {
     phone: (data.phone as string) || '',
     city: (data.city as string) || '',
     address: (data.address as string) || '',
+    about: (data.about as string) || '',
+    speciality: (data.speciality as string) || '',
     logoUrl: (data.logoUrl as string) || '',
     brandColor: (data.brandColor as string) || '#6366f1',
     active: Boolean(data.active),

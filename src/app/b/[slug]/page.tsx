@@ -80,6 +80,9 @@ export default function ReviewPage() {
         body: JSON.stringify({
           businessName: business.name,
           category: business.category,
+          city: business.city,
+          about: business.about || '',
+          speciality: business.speciality || '',
           rating,
           tone,
         }),

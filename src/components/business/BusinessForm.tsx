@@ -40,6 +40,8 @@ export function BusinessForm({ initial, onSubmit, loading }: BusinessFormProps) 
     phone: initial?.phone || '',
     city: initial?.city || '',
     address: initial?.address || '',
+    about: initial?.about || '',
+    speciality: initial?.speciality || '',
     brandColor: initial?.brandColor || '#6366f1',
     logoUrl: initial?.logoUrl || '',
     active: initial?.active ?? true,
@@ -185,6 +187,24 @@ export function BusinessForm({ initial, onSubmit, loading }: BusinessFormProps) 
               value={form.address}
               onChange={(e) => set('address', e.target.value)}
               placeholder="12, MG Road, Andheri West, Mumbai"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Input
+              label="About Business"
+              value={form.about}
+              onChange={(e) => set('about', e.target.value)}
+              placeholder="A cozy family restaurant serving authentic Maharashtrian cuisine since 2010"
+              hint="1–2 sentences about your business. Helps AI write more specific reviews."
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Input
+              label="Speciality / Famous For"
+              value={form.speciality}
+              onChange={(e) => set('speciality', e.target.value)}
+              placeholder="Biryani, Butter Chicken, Vada Pav, Quick service"
+              hint="What are you known for? Dishes, services, or qualities. Comma separated."
             />
           </div>
         </div>

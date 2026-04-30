@@ -33,6 +33,8 @@ export interface Business {
   phone: string;
   city: string;
   address: string;
+  about: string;        // short description of the business
+  speciality: string;   // what they're known for (e.g. "Biryani, Butter Chicken")
   logoUrl: string;
   brandColor: string;
   active: boolean;
