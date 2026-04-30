@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,27 +12,64 @@ import {
   Settings,
   LogOut,
   Menu,
-  X,
   ChevronRight,
   Bell,
   Plus,
+  Shield,
+  Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import toast from 'react-hot-toast';
 
-const navItems = [
+const ownerNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/businesses', label: 'Businesses', icon: Building2 },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  const navItems = [
+    ...ownerNavItems,
+    ...(isAdmin ? [{ href: '/dashboard/admin', label: 'Admin', icon: Shield }] : []),
+  ];
+
+  // Capture PWA install prompt
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+      // Show banner after 3 seconds if not already installed
+      setTimeout(() => setShowInstallBanner(true), 3000);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      toast.success('ReviewEase AI added to home screen! 🎉');
+      setInstallPrompt(null);
+      setShowInstallBanner(false);
+    }
+  };
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -51,7 +88,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map((item) => {
-          const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+          const active =
+            pathname === item.href ||
+            (item.href !== '/dashboard' && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}
@@ -61,7 +100,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
                 active
                   ? 'bg-violet-50 text-violet-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                item.href === '/dashboard/admin' && 'border border-violet-100'
               )}
             >
               <item.icon size={18} />
@@ -73,7 +113,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </nav>
 
       {/* Add Business CTA */}
-      <div className="px-3 pb-4">
+      <div className="px-3 pb-2">
         <Link href="/dashboard/businesses/new">
           <Button size="sm" className="w-full">
             <Plus size={16} />
@@ -82,13 +122,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </Link>
       </div>
 
+      {/* PWA Install button */}
+      {installPrompt && (
+        <div className="px-3 pb-3">
+          <button
+            onClick={handleInstall}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-100"
+          >
+            <Download size={15} />
+            Add to Home Screen
+          </button>
+        </div>
+      )}
+
       {/* User */}
       <div className="px-3 py-4 border-t border-gray-100">
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
           <Avatar name={user?.name || 'User'} size="sm" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'User'}</p>
-            <p className="text-xs text-gray-500 truncate">{user?.plan?.toUpperCase()} plan</p>
+            <p className="text-xs text-gray-500 truncate capitalize">
+              {user?.role === 'admin' ? '👑 Admin' : `${user?.plan} plan`}
+            </p>
           </div>
           <button
             onClick={logout}
@@ -153,10 +208,44 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
+        {/* PWA install banner */}
+        <AnimatePresence>
+          {showInstallBanner && installPrompt && (
+            <motion.div
+              initial={{ opacity: 0, y: -40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -40 }}
+              className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-4 py-3 flex items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Sparkles size={16} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Install ReviewEase AI</p>
+                  <p className="text-xs text-violet-200">Add to home screen for quick access</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={handleInstall}
+                  className="bg-white text-violet-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-violet-50 transition-colors"
+                >
+                  Install
+                </button>
+                <button
+                  onClick={() => setShowInstallBanner(false)}
+                  className="text-violet-200 hover:text-white p-1"
+                >
+                  ✕
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );

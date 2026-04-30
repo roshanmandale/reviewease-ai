@@ -1,10 +1,14 @@
 export type Plan = 'free' | 'starter' | 'pro' | 'agency';
+export type UserRole = 'owner' | 'admin';
 
 export interface User {
   uid: string;
   name: string;
   email: string;
   plan: Plan;
+  role: UserRole;
+  businessLimit: number;   // max businesses this user can create
+  disabled: boolean;       // admin can disable accounts
   createdAt: string;
 }
 
@@ -33,8 +37,8 @@ export interface Business {
   phone: string;
   city: string;
   address: string;
-  about: string;        // short description of the business
-  speciality: string;   // what they're known for (e.g. "Biryani, Butter Chicken")
+  about: string;
+  speciality: string;
   logoUrl: string;
   brandColor: string;
   active: boolean;

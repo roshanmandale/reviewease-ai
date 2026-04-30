@@ -1,6 +1,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { Hero } from '@/components/landing/Hero';
+import { HeroSection } from '@/components/HeroSection';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { Features } from '@/components/landing/Features';
 import { Testimonials } from '@/components/landing/Testimonials';
@@ -13,7 +13,7 @@ export default function HomePage() {
     <>
       <Navbar />
       <main>
-        <Hero />
+        <HeroSection />
         <HowItWorks />
         <Features />
         <Testimonials />
