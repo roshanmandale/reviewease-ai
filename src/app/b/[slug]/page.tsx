@@ -12,6 +12,7 @@ import {
   RefreshCw,
   ChevronRight,
   ArrowLeft,
+  MapPin,
 } from 'lucide-react';
 import { Business, ReviewTone } from '@/types';
 import { getBusinessBySlug } from '@/services/businessService';
@@ -23,23 +24,21 @@ import { getGoogleReviewUrl, copyToClipboard, getInitials, getDeviceType } from 
 import toast from 'react-hot-toast';
 
 type Step = 'rating' | 'tone' | 'reviews' | 'done';
-
 const STEP_INDEX: Record<Step, number> = { rating: 0, tone: 1, reviews: 2, done: 3 };
 
 const ratingConfig = [
-  { label: '', emoji: '' },
-  { label: 'Poor', emoji: '😞' },
-  { label: 'Fair', emoji: '😐' },
-  { label: 'Good', emoji: '🙂' },
-  { label: 'Great', emoji: '😄' },
-  { label: 'Amazing!', emoji: '🤩' },
+  { label: '', emoji: '', desc: '' },
+  { label: 'Poor',     emoji: '😞', desc: "We're sorry to hear that." },
+  { label: 'Fair',     emoji: '😐', desc: 'Thanks for your feedback.' },
+  { label: 'Good',     emoji: '🙂', desc: 'Glad you had a good time!' },
+  { label: 'Great',    emoji: '😄', desc: "That's wonderful to hear!" },
+  { label: 'Amazing!', emoji: '🤩', desc: 'You made our day! 🎉' },
 ];
 
-// Page-level slide animation
-const pageVariants = {
-  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 40 : -40 }),
+const slideVariants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 32 : -32 }),
   center: { opacity: 1, x: 0 },
-  exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -40 : 40 }),
+  exit:  (dir: number) => ({ opacity: 0, x: dir > 0 ? -32 : 32 }),
 };
 
 export default function ReviewPage() {
@@ -70,16 +69,8 @@ export default function ReviewPage() {
         if (!biz) { setNotFound(true); return; }
         setBusiness(biz);
         const ua = navigator.userAgent;
-        logScan({
-          businessId: biz.id,
-          slug: biz.slug,
-          deviceType: getDeviceType(ua),
-          userAgent: ua,
-          timestamp: new Date().toISOString(),
-        }).catch(() => {});
-      } catch {
-        setNotFound(true);
-      }
+        logScan({ businessId: biz.id, slug: biz.slug, deviceType: getDeviceType(ua), userAgent: ua, timestamp: new Date().toISOString() }).catch(() => {});
+      } catch { setNotFound(true); }
     }
     load();
   }, [slug]);
@@ -97,15 +88,7 @@ export default function ReviewPage() {
       const res = await fetch('/api/generate-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessName: business.name,
-          category: business.category,
-          city: business.city,
-          about: business.about || '',
-          speciality: business.speciality || '',
-          rating,
-          tone,
-        }),
+        body: JSON.stringify({ businessName: business.name, category: business.category, city: business.city, about: business.about || '', speciality: business.speciality || '', rating, tone }),
       });
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
@@ -124,19 +107,9 @@ export default function ReviewPage() {
     try {
       await copyToClipboard(selectedReview);
       setCopied(true);
-      toast.success('Review copied! Paste it on Google. 🎉');
-      logReviewClick({
-        businessId: business.id,
-        rating,
-        tone,
-        reviewText: selectedReview,
-        redirected: true,
-        timestamp: new Date().toISOString(),
-      }).catch(() => {});
-      setTimeout(() => {
-        window.open(getGoogleReviewUrl(business.placeId), '_blank');
-        goTo('done');
-      }, 1000);
+      toast.success('Review copied! 🎉');
+      logReviewClick({ businessId: business.id, rating, tone, reviewText: selectedReview, redirected: true, timestamp: new Date().toISOString() }).catch(() => {});
+      setTimeout(() => { window.open(getGoogleReviewUrl(business.placeId), '_blank'); goTo('done'); }, 900);
     } catch {
       toast.error('Could not copy. Please try again.');
     }
@@ -145,16 +118,17 @@ export default function ReviewPage() {
   // ── Not found ──
   if (notFound) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="text-6xl mb-5">🔍</div>
-          <h1 className="text-2xl font-bold text-gray-900">Page Not Found</h1>
+          <div className="text-5xl mb-4">🔍</div>
+          <h1 className="text-xl font-bold text-gray-900">Page Not Found</h1>
           <p className="text-gray-400 mt-2 text-sm">This review page doesn&apos;t exist or has been deactivated.</p>
         </div>
       </div>
     );
   }
 
+  // ── Loading ──
   if (!business) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -163,346 +137,354 @@ export default function ReviewPage() {
     );
   }
 
-  const progressPct = step === 'rating' ? 20 : step === 'tone' ? 50 : step === 'reviews' ? 80 : 100;
+  const progressPct = step === 'rating' ? 25 : step === 'tone' ? 50 : step === 'reviews' ? 75 : 100;
+  const bc = business.brandColor;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Very subtle top tint */}
+    <div className="min-h-screen flex flex-col bg-white" style={{ WebkitOverflowScrolling: 'touch' }}>
+
+      {/* ── Top brand strip ── */}
       <div
-        className="absolute top-0 left-0 right-0 h-64 pointer-events-none"
-        style={{ background: `linear-gradient(180deg, ${business.brandColor}08 0%, transparent 100%)` }}
-      />
+        className="w-full flex-shrink-0"
+        style={{
+          background: `linear-gradient(135deg, ${bc} 0%, ${bc}cc 100%)`,
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }}
+      >
+        {/* Progress bar */}
+        <div className="h-1 bg-white/20">
+          <motion.div
+            className="h-full bg-white/80 rounded-full"
+            animate={{ width: `${progressPct}%` }}
+            transition={{ duration: 0.4, ease: 'easeInOut' }}
+          />
+        </div>
 
-      <div className="w-full max-w-sm relative z-10">
-
-        {/* ── Business header ── */}
-        <motion.div
-          initial={{ opacity: 0, y: -16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="text-center mb-7"
-        >
+        {/* Business info */}
+        <div className="flex items-center gap-4 px-5 py-5">
           {/* Logo */}
-          <div className="flex justify-center mb-4">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 300, damping: 20 }}
-            >
-              {business.logoUrl ? (
-                <img
-                  src={business.logoUrl}
-                  alt={business.name}
-                  className="w-20 h-20 rounded-2xl object-cover shadow-2xl"
-                  style={{ boxShadow: `0 8px 32px ${business.brandColor}40` }}
-                />
-              ) : (
-                <div
-                  className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-2xl"
-                  style={{
-                    background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}bb)`,
-                    boxShadow: `0 8px 32px ${business.brandColor}40`,
-                  }}
-                >
-                  {getInitials(business.name)}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+            className="flex-shrink-0"
+          >
+            {business.logoUrl ? (
+              <img
+                src={business.logoUrl}
+                alt={business.name}
+                className="w-14 h-14 rounded-2xl object-cover"
+                style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
+              />
+            ) : (
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold"
+                style={{ backgroundColor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)' }}
+              >
+                {getInitials(business.name)}
+              </div>
+            )}
+          </motion.div>
+
+          {/* Name + location */}
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex-1 min-w-0"
+          >
+            <h1 className="text-lg font-bold text-white leading-tight truncate">{business.name}</h1>
+            <div className="flex items-center gap-1 mt-0.5">
+              <MapPin size={11} className="text-white/60 flex-shrink-0" />
+              <p className="text-sm text-white/70 truncate">{business.category} · {business.city}</p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* ── Step content ── */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-md mx-auto px-5 py-6">
+          <AnimatePresence mode="wait" custom={direction}>
+
+            {/* ── Step 1: Rating ── */}
+            {step === 'rating' && (
+              <motion.div
+                key="rating"
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                className="space-y-8"
+              >
+                <div className="text-center pt-2">
+                  <h2 className="text-2xl font-bold text-gray-900">How was your visit?</h2>
+                  <p className="text-gray-400 mt-2 text-sm">Tap a star to share your experience</p>
                 </div>
-              )}
-            </motion.div>
-          </div>
-          <motion.h1
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-xl font-bold text-gray-900"
-          >
-            {business.name}
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25 }}
-            className="text-sm text-gray-400 mt-1"
-          >
-            {business.category} · {business.city}
-          </motion.p>
-        </motion.div>
 
-        {/* ── Card ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, type: 'spring', stiffness: 260, damping: 24 }}
-          className="bg-white rounded-3xl overflow-hidden border border-gray-100"
-          style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}
-        >
-          {/* Progress bar */}
-          <div className="h-1 bg-gray-100">
-            <motion.div
-              className="h-full rounded-full"
-              style={{ background: `linear-gradient(90deg, ${business.brandColor}, ${business.brandColor}bb)` }}
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.45, ease: 'easeInOut' }}
-            />
-          </div>
+                {/* Stars */}
+                <div className="flex justify-center py-2">
+                  <StarRating value={rating} onChange={setRating} size={52} color={bc} />
+                </div>
 
-          <div className="p-6">
-            <AnimatePresence mode="wait" custom={direction}>
-
-              {/* ── Step 1: Rating ── */}
-              {step === 'rating' && (
-                <motion.div
-                  key="rating"
-                  custom={direction}
-                  variants={pageVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                  className="space-y-7"
-                >
-                  <div className="text-center">
-                    <h2 className="text-xl font-bold text-gray-900">How was your experience?</h2>
-                    <p className="text-sm text-gray-400 mt-1.5">Tap a star to rate your visit</p>
-                  </div>
-
-                  <div className="flex justify-center">
-                    <StarRating value={rating} onChange={setRating} size={46} color={business.brandColor} />
-                  </div>
-
-                  <AnimatePresence>
+                {/* Rating label */}
+                <div className="h-16 flex flex-col items-center justify-center">
+                  <AnimatePresence mode="wait">
                     {rating > 0 && (
                       <motion.div
-                        initial={{ opacity: 0, scale: 0.7, y: 8 }}
+                        key={rating}
+                        initial={{ opacity: 0, scale: 0.6, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.7 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                        exit={{ opacity: 0, scale: 0.6, y: -10 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 22 }}
                         className="text-center"
                       >
-                        <span className="text-3xl">{ratingConfig[rating].emoji}</span>
-                        <p
-                          className="text-base font-semibold mt-1"
-                          style={{ color: business.brandColor }}
-                        >
+                        <div className="text-4xl mb-1">{ratingConfig[rating].emoji}</div>
+                        <p className="text-base font-bold" style={{ color: bc }}>
                           {ratingConfig[rating].label}
                         </p>
+                        <p className="text-xs text-gray-400 mt-0.5">{ratingConfig[rating].desc}</p>
                       </motion.div>
                     )}
                   </AnimatePresence>
+                </div>
 
-                  <motion.button
-                    onClick={handleContinueToTone}
-                    disabled={rating === 0}
-                    whileTap={{ scale: 0.97 }}
-                    whileHover={rating > 0 ? { scale: 1.02 } : {}}
-                    className="w-full py-3.5 rounded-2xl font-semibold text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-30"
-                    style={{
-                      background: rating > 0
-                        ? `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}cc)`
-                        : 'rgba(255,255,255,0.1)',
-                      boxShadow: rating > 0 ? `0 4px 20px ${business.brandColor}40` : 'none',
-                    }}
-                  >
-                    Continue
-                    <ChevronRight size={17} />
-                  </motion.button>
-                </motion.div>
-              )}
-
-              {/* ── Step 2: Tone ── */}
-              {step === 'tone' && (
-                <motion.div
-                  key="tone"
-                  custom={direction}
-                  variants={pageVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                  className="space-y-5"
+                {/* CTA */}
+                <motion.button
+                  onClick={handleContinueToTone}
+                  disabled={rating === 0}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full py-4 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-25"
+                  style={{
+                    background: rating > 0 ? `linear-gradient(135deg, ${bc}, ${bc}cc)` : '#e5e7eb',
+                    boxShadow: rating > 0 ? `0 6px 24px ${bc}40` : 'none',
+                    color: rating > 0 ? 'white' : '#9ca3af',
+                  }}
                 >
-                  <div className="text-center">
-                    <div className="flex justify-center gap-1 mb-3">
-                      {Array.from({ length: rating }).map((_, i) => (
-                        <Star key={i} size={16} style={{ color: business.brandColor, fill: business.brandColor }} />
-                      ))}
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-900">Choose Your Review Style</h2>
-                    <p className="text-sm text-gray-400 mt-1.5">
-                      Select the tone that best matches how you feel
-                    </p>
-                  </div>
+                  Continue
+                  <ChevronRight size={18} />
+                </motion.button>
+              </motion.div>
+            )}
 
-                  <ToneSelector value={tone} onChange={setTone} brandColor={business.brandColor} />
-
-                  <motion.button
-                    onClick={handleGenerateReviews}
-                    whileTap={{ scale: 0.97 }}
-                    whileHover={{ scale: 1.02 }}
-                    className="w-full py-3.5 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
-                    style={{
-                      background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}cc)`,
-                      boxShadow: `0 4px 20px ${business.brandColor}40`,
-                    }}
-                  >
-                    <Sparkles size={16} />
-                    Generate My Reviews
-                  </motion.button>
-
-                  <button
-                    onClick={() => goTo('rating')}
-                    className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors py-1"
-                  >
-                    <ArrowLeft size={13} />
-                    Back
-                  </button>
-                </motion.div>
-              )}
-
-              {/* ── Step 3: Reviews ── */}
-              {step === 'reviews' && (
-                <motion.div
-                  key="reviews"
-                  custom={direction}
-                  variants={pageVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                  className="space-y-4"
-                >
-                  <div className="text-center">
-                    <h2 className="text-xl font-bold text-gray-900">Pick Your Review</h2>
-                    <p className="text-sm text-gray-400 mt-1.5">
-                      Select one, copy it, and paste it on Google
-                    </p>
-                  </div>
-
-                  {generating ? (
-                    <div className="space-y-3 py-2">
-                      {[1, 2, 3].map((i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: [0.3, 0.6, 0.3] }}
-                          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
-                          className="h-16 rounded-2xl bg-gray-100"
-                        />
-                      ))}
-                      <p className="text-center text-xs text-gray-400 pt-1">
-                        Crafting personalised reviews…
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {reviews.map((review, i) => (
-                        <ReviewCard
-                          key={i}
-                          text={review}
-                          selected={selectedReview === review}
-                          onSelect={() => setSelectedReview(review)}
-                          index={i}
-                          brandColor={business.brandColor}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {!generating && (
-                    <>
-                      <motion.button
-                        onClick={handleCopyAndRedirect}
-                        disabled={!selectedReview}
-                        whileTap={{ scale: 0.97 }}
-                        whileHover={selectedReview ? { scale: 1.02 } : {}}
-                        className="w-full py-3.5 rounded-2xl font-semibold text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-30"
+            {/* ── Step 2: Tone ── */}
+            {step === 'tone' && (
+              <motion.div
+                key="tone"
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                className="space-y-5"
+              >
+                <div className="text-center pt-2">
+                  {/* Stars recap */}
+                  <div className="flex justify-center gap-1 mb-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        size={18}
                         style={{
-                          background: selectedReview
-                            ? `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}cc)`
-                            : 'rgba(255,255,255,0.1)',
-                          boxShadow: selectedReview ? `0 4px 20px ${business.brandColor}40` : 'none',
+                          color: i < rating ? bc : '#e5e7eb',
+                          fill: i < rating ? bc : '#e5e7eb',
                         }}
-                      >
-                        {copied ? <Check size={16} /> : <Copy size={16} />}
-                        {copied ? 'Copied!' : 'Copy & Post on Google'}
-                        {!copied && <ExternalLink size={14} />}
-                      </motion.button>
+                      />
+                    ))}
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900">Choose Your Style</h2>
+                  <p className="text-gray-400 mt-1.5 text-sm">How would you like your review to sound?</p>
+                </div>
 
-                      <button
-                        onClick={() => { setReviews([]); setSelectedReview(null); handleGenerateReviews(); }}
-                        className="w-full flex items-center justify-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors py-1"
-                      >
-                        <RefreshCw size={12} />
-                        Generate different options
-                      </button>
-                    </>
-                  )}
-                </motion.div>
-              )}
+                <ToneSelector value={tone} onChange={setTone} brandColor={bc} />
 
-              {/* ── Step 4: Done ── */}
-              {step === 'done' && (
-                <motion.div
-                  key="done"
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-                  className="text-center space-y-5 py-3"
+                <motion.button
+                  onClick={handleGenerateReviews}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full py-4 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2"
+                  style={{
+                    background: `linear-gradient(135deg, ${bc}, ${bc}cc)`,
+                    boxShadow: `0 6px 24px ${bc}40`,
+                  }}
                 >
-                  <motion.div
-                    initial={{ scale: 0, rotate: -20 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 16, delay: 0.1 }}
-                    className="text-6xl"
-                  >
-                    🎉
-                  </motion.div>
+                  <Sparkles size={18} />
+                  Generate My Reviews
+                </motion.button>
 
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">Thank You!</h2>
-                    <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
-                      Your review has been copied to your clipboard. Open Google and paste it to complete your review.
+                <button
+                  onClick={() => goTo('rating')}
+                  className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 py-2 active:text-gray-600 transition-colors"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                >
+                  <ArrowLeft size={14} />
+                  Back
+                </button>
+              </motion.div>
+            )}
+
+            {/* ── Step 3: Reviews ── */}
+            {step === 'reviews' && (
+              <motion.div
+                key="reviews"
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                className="space-y-4"
+              >
+                <div className="text-center pt-2">
+                  <h2 className="text-2xl font-bold text-gray-900">Pick Your Review</h2>
+                  <p className="text-gray-400 mt-1.5 text-sm">Select one, then tap the button below</p>
+                </div>
+
+                {/* Loading skeletons */}
+                {generating ? (
+                  <div className="space-y-3 pt-1">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="rounded-2xl overflow-hidden" style={{ height: 72 }}>
+                        <motion.div
+                          className="w-full h-full"
+                          style={{ background: 'linear-gradient(90deg, #f3f4f6 25%, #e9eaec 50%, #f3f4f6 75%)', backgroundSize: '200% 100%' }}
+                          animate={{ backgroundPosition: ['200% 0', '-200% 0'] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: 'linear', delay: i * 0.1 }}
+                        />
+                      </div>
+                    ))}
+                    <p className="text-center text-xs text-gray-400 pt-1 flex items-center justify-center gap-1.5">
+                      <Sparkles size={11} className="text-violet-400" />
+                      Writing personalised reviews for you…
                     </p>
                   </div>
-
-                  <div
-                    className="rounded-2xl p-4 text-left bg-gray-50 border border-gray-100"
-                  >
-                    <p className="text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wide">Your review</p>
-                    <p className="text-sm text-gray-700 italic leading-relaxed">&ldquo;{selectedReview}&rdquo;</p>
+                ) : (
+                  <div className="space-y-3">
+                    {reviews.map((review, i) => (
+                      <ReviewCard
+                        key={i}
+                        text={review}
+                        selected={selectedReview === review}
+                        onSelect={() => setSelectedReview(review)}
+                        index={i}
+                        brandColor={bc}
+                      />
+                    ))}
                   </div>
+                )}
 
-                  <a href={getGoogleReviewUrl(business.placeId)} target="_blank" rel="noopener noreferrer">
+                {!generating && (
+                  <>
+                    {/* Main CTA */}
                     <motion.button
+                      onClick={handleCopyAndRedirect}
+                      disabled={!selectedReview}
                       whileTap={{ scale: 0.97 }}
-                      whileHover={{ scale: 1.02 }}
-                      className="w-full py-3.5 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
+                      className="w-full py-4 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-25 mt-2"
                       style={{
-                        background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}cc)`,
-                        boxShadow: `0 4px 20px ${business.brandColor}40`,
+                        background: selectedReview ? `linear-gradient(135deg, ${bc}, ${bc}cc)` : '#e5e7eb',
+                        boxShadow: selectedReview ? `0 6px 24px ${bc}40` : 'none',
+                        color: selectedReview ? 'white' : '#9ca3af',
                       }}
                     >
-                      <ExternalLink size={16} />
-                      Open Google Reviews
+                      {copied ? <Check size={18} /> : <Copy size={18} />}
+                      {copied ? 'Copied! Opening Google…' : 'Copy & Post on Google'}
+                      {!copied && <ExternalLink size={15} />}
                     </motion.button>
-                  </a>
+
+                    {/* Regenerate */}
+                    <button
+                      onClick={() => { setReviews([]); setSelectedReview(null); handleGenerateReviews(); }}
+                      className="w-full flex items-center justify-center gap-1.5 text-xs text-gray-400 py-2 active:text-gray-600 transition-colors"
+                      style={{ WebkitTapHighlightColor: 'transparent' }}
+                    >
+                      <RefreshCw size={12} />
+                      Try different options
+                    </button>
+                  </>
+                )}
+              </motion.div>
+            )}
+
+            {/* ── Step 4: Done ── */}
+            {step === 'done' && (
+              <motion.div
+                key="done"
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+                className="text-center space-y-6 pt-4"
+              >
+                {/* Confetti emoji */}
+                <motion.div
+                  initial={{ scale: 0, rotate: -30 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.1 }}
+                  className="text-7xl"
+                >
+                  🎉
                 </motion.div>
-              )}
 
-            </AnimatePresence>
-          </div>
-        </motion.div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Thank You!</h2>
+                  <p className="text-gray-500 mt-2 text-sm leading-relaxed max-w-xs mx-auto">
+                    Your review has been copied. Open Google, paste it, and hit submit — it takes 5 seconds!
+                  </p>
+                </div>
 
-        {/* Powered by */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-center text-xs text-gray-400 mt-5 flex items-center justify-center gap-1.5"
-        >
-          Powered by
-          <Sparkles size={10} className="text-violet-500" />
-          <span className="text-violet-500 font-medium">ReviewKaro</span>
-        </motion.p>
+                {/* Review preview */}
+                <div
+                  className="rounded-2xl p-4 text-left mx-auto"
+                  style={{ backgroundColor: `${bc}08`, border: `1px solid ${bc}20` }}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: bc }}>
+                    Your review
+                  </p>
+                  <p className="text-sm text-gray-700 leading-relaxed italic">
+                    &ldquo;{selectedReview}&rdquo;
+                  </p>
+                </div>
+
+                {/* Open Google button */}
+                <a
+                  href={getGoogleReviewUrl(business.placeId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    className="w-full py-4 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2"
+                    style={{
+                      background: `linear-gradient(135deg, ${bc}, ${bc}cc)`,
+                      boxShadow: `0 6px 24px ${bc}40`,
+                    }}
+                  >
+                    <ExternalLink size={18} />
+                    Open Google Reviews
+                  </motion.button>
+                </a>
+
+                <p className="text-xs text-gray-400">
+                  Just paste the review and tap Submit on Google
+                </p>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* ── Footer ── */}
+      <div
+        className="flex-shrink-0 flex items-center justify-center gap-1.5 py-3 border-t border-gray-100"
+        style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))' }}
+      >
+        <Sparkles size={10} className="text-violet-400" />
+        <span className="text-xs text-gray-400">Powered by</span>
+        <span className="text-xs font-semibold text-violet-500">ReviewKaro</span>
       </div>
     </div>
   );

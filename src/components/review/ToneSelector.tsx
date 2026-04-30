@@ -14,7 +14,7 @@ const TONES: Tone[] = [
   { value: 'Friendly',     label: 'Friendly',      sublabel: 'Warm & casual',       emoji: '😊' },
   { value: 'Professional', label: 'Professional',  sublabel: 'Formal & polished',   emoji: '💼' },
   { value: 'Hindi',        label: 'हिंदी',          sublabel: 'Pure Hindi',          emoji: '🇮🇳' },
-  { value: 'Hinglish',     label: 'Hinglish',      sublabel: 'Hindi + English mix', emoji: '🤙' },
+  { value: 'Hinglish',     label: 'Hinglish',      sublabel: 'Hindi + English',     emoji: '🤙' },
   { value: 'Short',        label: 'Short & Crisp', sublabel: 'Under 10 words',      emoji: '⚡' },
 ];
 
@@ -26,7 +26,7 @@ interface ToneSelectorProps {
 
 export function ToneSelector({ value, onChange, brandColor = '#7c3aed' }: ToneSelectorProps) {
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-2.5">
       {TONES.map((tone, i) => {
         const selected = value === tone.value;
         const isLast = i === TONES.length - 1 && TONES.length % 2 !== 0;
@@ -36,56 +36,57 @@ export function ToneSelector({ value, onChange, brandColor = '#7c3aed' }: ToneSe
             key={tone.value}
             type="button"
             onClick={() => onChange(tone.value)}
-            className={`
-              relative rounded-2xl p-3.5 text-left transition-all duration-150 active:scale-[0.98]
-              ${isLast ? 'col-span-2' : ''}
-              ${selected
-                ? 'border-2 shadow-sm'
-                : 'border border-gray-100 bg-gray-50 hover:bg-gray-100 hover:border-gray-200'
-              }
-            `}
-            style={
-              selected
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              ...(isLast ? {} : {}),
+              ...(selected
                 ? {
                     borderColor: brandColor,
-                    backgroundColor: `${brandColor}0d`,
-                    boxShadow: `0 2px 12px ${brandColor}20`,
+                    backgroundColor: `${brandColor}10`,
+                    boxShadow: `0 0 0 2px ${brandColor}`,
                   }
-                : {}
-            }
+                : {
+                    borderColor: '#e5e7eb',
+                    backgroundColor: '#fafafa',
+                  }),
+            }}
+            className={`
+              relative rounded-2xl p-3.5 text-left
+              border-2 transition-all duration-150
+              active:scale-[0.97] touch-manipulation
+              ${isLast ? 'col-span-2' : ''}
+            `}
           >
-            <div className="flex items-center gap-2.5">
-              {/* Emoji */}
+            <div className="flex items-center gap-3">
+              {/* Emoji bubble */}
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                style={
-                  selected
-                    ? { backgroundColor: `${brandColor}18` }
-                    : { backgroundColor: 'rgba(0,0,0,0.04)' }
-                }
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                style={{
+                  backgroundColor: selected ? `${brandColor}18` : '#f3f4f6',
+                }}
               >
                 {tone.emoji}
               </div>
 
-              {/* Text */}
+              {/* Labels */}
               <div className="flex-1 min-w-0">
                 <p
-                  className="text-sm font-semibold leading-tight truncate"
-                  style={{ color: selected ? brandColor : '#374151' }}
+                  className="text-sm font-bold leading-tight"
+                  style={{ color: selected ? brandColor : '#1f2937' }}
                 >
                   {tone.label}
                 </p>
-                <p className="text-xs mt-0.5 text-gray-400 truncate">{tone.sublabel}</p>
+                <p className="text-xs mt-0.5 text-gray-400 leading-tight">{tone.sublabel}</p>
               </div>
 
-              {/* Selected dot */}
+              {/* Check */}
               {selected && (
                 <div
-                  className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                  className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: brandColor }}
                 >
-                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                    <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
               )}

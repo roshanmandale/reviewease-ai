@@ -14,45 +14,54 @@ interface ReviewCardProps {
 export function ReviewCard({ text, selected, onSelect, index, brandColor = '#7c3aed' }: ReviewCardProps) {
   return (
     <motion.button
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.07, duration: 0.25 }}
+      transition={{ delay: index * 0.06, duration: 0.22, ease: 'easeOut' }}
       type="button"
       onClick={onSelect}
-      className="w-full text-left p-4 rounded-2xl border transition-all duration-150 active:scale-[0.99]"
-      style={
-        selected
-          ? {
-              borderColor: brandColor,
-              borderWidth: '2px',
-              backgroundColor: `${brandColor}0d`,
-              boxShadow: `0 2px 12px ${brandColor}20`,
-            }
-          : {
-              borderColor: '#f3f4f6',
-              borderWidth: '1px',
-              backgroundColor: '#f9fafb',
-            }
-      }
+      className="w-full text-left rounded-2xl transition-all duration-150 active:scale-[0.985] touch-manipulation"
+      style={{
+        WebkitTapHighlightColor: 'transparent',
+        padding: '14px 16px',
+        border: selected ? `2px solid ${brandColor}` : '2px solid #f0f0f0',
+        backgroundColor: selected ? `${brandColor}08` : '#fafafa',
+        boxShadow: selected ? `0 4px 16px ${brandColor}22` : 'none',
+      }}
     >
       <div className="flex items-start gap-3">
-        {/* Radio */}
+        {/* Radio circle */}
         <div
-          className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-150"
-          style={
-            selected
-              ? { borderColor: brandColor, backgroundColor: brandColor }
-              : { borderColor: '#d1d5db', backgroundColor: 'white' }
-          }
+          className="flex-shrink-0 mt-0.5 transition-all duration-150"
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            border: selected ? `2px solid ${brandColor}` : '2px solid #d1d5db',
+            backgroundColor: selected ? brandColor : 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           {selected && (
-            <div className="w-2 h-2 rounded-full bg-white" />
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                backgroundColor: 'white',
+              }}
+            />
           )}
         </div>
 
+        {/* Review text */}
         <p
-          className="text-sm leading-relaxed"
-          style={{ color: selected ? '#111827' : '#4b5563' }}
+          className="text-sm leading-relaxed flex-1"
+          style={{
+            color: selected ? '#111827' : '#374151',
+            fontWeight: selected ? 500 : 400,
+          }}
         >
           {text}
         </p>
