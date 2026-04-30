@@ -3,46 +3,34 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Star, Sparkles, Zap } from 'lucide-react';
+import { ArrowRight, Star, Sparkles, Zap, Shield, Clock } from 'lucide-react';
 
-// ─── Fade-up animation variant ───────────────────────────────────────────────
-const fadeUp = {
-  hidden: { opacity: 0, y: 28 },
-  visible: (delay = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay },
-  }),
-};
-
-// ─── Floating review card ─────────────────────────────────────────────────────
-function FloatingCard({
+// ─── Review card shown below hero ────────────────────────────────────────────
+function ReviewPill({
   text,
-  stars,
   name,
+  stars,
   delay,
-  className,
 }: {
   text: string;
-  stars: number;
   name: string;
+  stars: number;
   delay: number;
-  className?: string;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className={`absolute backdrop-blur-md bg-white/8 border border-white/10 rounded-2xl p-4 shadow-2xl max-w-[220px] ${className}`}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.5, ease: 'easeOut' }}
+      className="flex-shrink-0 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-left min-w-[220px] max-w-[260px]"
     >
       <div className="flex gap-0.5 mb-2">
         {Array.from({ length: stars }).map((_, i) => (
-          <Star key={i} size={12} className="text-amber-400 fill-amber-400" />
+          <Star key={i} size={11} className="text-amber-400 fill-amber-400" />
         ))}
       </div>
-      <p className="text-white/90 text-xs leading-relaxed">{text}</p>
-      <p className="text-white/40 text-xs mt-2 font-medium">{name}</p>
+      <p className="text-white/80 text-xs leading-relaxed">{text}</p>
+      <p className="text-white/30 text-xs mt-2">{name}</p>
     </motion.div>
   );
 }
@@ -50,272 +38,237 @@ function FloatingCard({
 // ─── Main HeroSection ─────────────────────────────────────────────────────────
 export function HeroSection() {
   return (
-    <section className="relative min-h-screen w-full overflow-hidden flex flex-col items-center justify-center bg-black">
+    <section className="relative min-h-screen w-full overflow-hidden flex flex-col items-center justify-center bg-[#050510]">
 
-      {/* ── Background gradients ── */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0f172a] to-black" />
-
-      {/* Top glow */}
+      {/* ── Background ── */}
+      {/* Top center glow */}
       <div
-        className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[700px] h-[700px] opacity-70 blur-3xl pointer-events-none"
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] pointer-events-none"
         style={{
-          background: 'radial-gradient(circle, rgba(39,243,169,0.18) 0%, transparent 70%)',
+          background:
+            'radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.35) 0%, rgba(99,102,241,0.15) 40%, transparent 70%)',
+        }}
+      />
+      {/* Bottom glow */}
+      <div
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 100%, rgba(39,243,169,0.08) 0%, transparent 70%)',
         }}
       />
 
-      {/* Bottom-right glow */}
+      {/* Subtle dot grid */}
       <div
-        className="absolute bottom-[-200px] right-1/3 w-[500px] h-[500px] opacity-60 blur-3xl pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, rgba(0,200,255,0.15) 0%, transparent 70%)',
-        }}
-      />
-
-      {/* Subtle grid */}
-      <div
-        className="absolute inset-0 opacity-[0.025] pointer-events-none"
+        className="absolute inset-0 pointer-events-none opacity-[0.15]"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
+            'radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
         }}
       />
 
-      {/* ── Floating review cards (decorative) ── */}
-      <FloatingCard
-        text="The biryani here is unreal 😍 Best in the city, no doubt!"
-        stars={5}
-        name="Priya S."
-        delay={0.8}
-        className="hidden lg:block top-[22%] left-[6%]"
-      />
-      <FloatingCard
-        text="Yaar service ekdum mast thi! Staff super friendly. 5 stars easily!"
-        stars={5}
-        name="Rahul M."
-        delay={1.0}
-        className="hidden lg:block bottom-[28%] left-[4%]"
-      />
-      <FloatingCard
-        text="Exceptional ambience and prompt service. Highly professional team."
-        stars={5}
-        name="Anita K."
-        delay={0.9}
-        className="hidden lg:block top-[20%] right-[5%]"
-      />
-      <FloatingCard
-        text="बहुत अच्छा अनुभव रहा। खाना लाजवाब था! ⭐"
-        stars={5}
-        name="Suresh P."
-        delay={1.1}
-        className="hidden lg:block bottom-[26%] right-[4%]"
-      />
+      {/* ── Content ── */}
+      <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 flex flex-col items-center text-center pt-28 pb-16">
 
-      {/* ── Content container ── */}
-      <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-5xl mx-auto">
-
-        {/* Glass card wrapper */}
+        {/* Badge */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="backdrop-blur-md bg-white/5 border border-white/10 rounded-3xl px-8 py-12 sm:px-14 sm:py-16 shadow-2xl"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-8 border"
+          style={{
+            background: 'rgba(124,58,237,0.12)',
+            borderColor: 'rgba(124,58,237,0.35)',
+          }}
         >
-          {/* Badge */}
-          <motion.div
-            custom={0}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="inline-flex items-center gap-2 bg-[rgba(39,243,169,0.08)] border border-[rgba(39,243,169,0.2)] rounded-full px-4 py-1.5 mb-8"
-          >
-            <Zap size={13} className="text-[#27f3a9]" />
-            <span className="text-sm text-[#27f3a9] font-medium">AI-Powered Review Generation</span>
-          </motion.div>
-
-          {/* Headline */}
-          <motion.h1
-            custom={0.1}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="leading-[1.1] tracking-[-0.01em]"
-            style={{ fontSize: 'clamp(2.2rem, 7vw, 6rem)', fontWeight: 300 }}
-          >
-            {/* Line 1 */}
-            <span
-              className="block"
-              style={{
-                background: 'linear-gradient(90deg, #666 0%, #d0d0d0 50%, #666 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              Turn happy customers
-            </span>
-
-            {/* Line 2 */}
-            <span
-              className="block"
-              style={{
-                background: 'linear-gradient(90deg, #666 0%, #d0d0d0 50%, #666 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              into Google reviews
-            </span>
-
-            {/* Line 3 — "is human + AI" */}
-            <span className="flex items-center justify-center gap-3 mt-2 flex-wrap">
-              <span className="text-white/40" style={{ fontSize: 'clamp(1.4rem, 4vw, 3.5rem)' }}>
-                is
-              </span>
-              <span className="flex items-center gap-2 bg-white/8 border border-white/10 rounded-full px-4 py-1">
-                <span className="text-2xl">👤</span>
-                <span
-                  className="font-light"
-                  style={{
-                    fontSize: 'clamp(1.4rem, 4vw, 3.5rem)',
-                    background: 'linear-gradient(90deg, #27f3a9, #00c8ff)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
-                >
-                  human
-                </span>
-              </span>
-              <span className="text-white/30" style={{ fontSize: 'clamp(1.4rem, 4vw, 3.5rem)' }}>
-                +
-              </span>
-              <span className="flex items-center gap-2 bg-white/8 border border-white/10 rounded-full px-4 py-1">
-                <Sparkles size={20} className="text-violet-400" />
-                <span
-                  className="font-light"
-                  style={{
-                    fontSize: 'clamp(1.4rem, 4vw, 3.5rem)',
-                    background: 'linear-gradient(90deg, #a78bfa, #818cf8)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
-                >
-                  AI
-                </span>
-              </span>
-            </span>
-          </motion.h1>
-
-          {/* Subheading */}
-          <motion.p
-            custom={0.25}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="mt-6 max-w-xl mx-auto text-center px-2"
-            style={{
-              fontSize: 'clamp(0.95rem, 2.2vw, 1.2rem)',
-              color: '#ccc',
-              lineHeight: 1.6,
-            }}
-          >
-            We help businesses turn real customer experiences into high-quality Google reviews
-            in seconds — with one QR scan.
-          </motion.p>
-
-          {/* CTA Button */}
-          <motion.div
-            custom={0.35}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4"
-          >
-            <Link href="/register">
-              <motion.button
-                whileHover={{
-                  scale: 1.03,
-                  boxShadow: '0px 6px 32px 8px rgba(39,243,169,0.22)',
-                }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center gap-2.5 font-semibold text-white group"
-                style={{
-                  padding: '12px 28px',
-                  background: '#000',
-                  boxShadow: '0px 6px 24px 6px rgba(39,243,169,0.15)',
-                  borderRadius: '8px',
-                  outline: '1px solid #30463C',
-                  fontSize: '1rem',
-                }}
-              >
-                Start Getting Reviews
-                <ArrowRight
-                  size={18}
-                  className="group-hover:translate-x-1 transition-transform"
-                />
-              </motion.button>
-            </Link>
-
-            <Link href="/pricing">
-              <button
-                className="text-sm font-medium text-white/50 hover:text-white/80 transition-colors"
-              >
-                View pricing →
-              </button>
-            </Link>
-          </motion.div>
-
-          {/* Social proof */}
-          <motion.div
-            custom={0.45}
-            variants={fadeUp}
-            initial="hidden"
-            animate="visible"
-            className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-white/30"
-          >
-            <span className="flex items-center gap-1.5">
-              <span className="text-[#27f3a9]">✓</span> No credit card required
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="text-[#27f3a9]">✓</span> Setup in 2 minutes
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="text-[#27f3a9]">✓</span> Works on any device
-            </span>
-          </motion.div>
+          <Zap size={13} className="text-violet-400" />
+          <span className="text-sm text-violet-300 font-medium tracking-wide">
+            AI-Powered Review Generation
+          </span>
         </motion.div>
 
-        {/* Stats row below card */}
+        {/* Headline */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.6, ease: 'easeOut' }}
+          className="font-bold text-white leading-[1.08] tracking-tight"
+          style={{ fontSize: 'clamp(2.6rem, 6.5vw, 5.5rem)' }}
+        >
+          Turn Happy Customers Into{' '}
+          <span
+            style={{
+              background: 'linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            Google Reviews
+          </span>
+          <br />
+          in Seconds
+        </motion.h1>
+
+        {/* Subheading */}
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="mt-6 max-w-2xl text-lg leading-relaxed"
+          style={{ color: 'rgba(255,255,255,0.5)' }}
+        >
+          QR-powered AI review generation for local businesses. One scan, one tap,
+          one 5-star review — in under 5 seconds.
+        </motion.p>
+
+        {/* CTA buttons */}
         <motion.div
-          custom={0.55}
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          className="mt-10 flex flex-wrap items-center justify-center gap-8 sm:gap-16"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="mt-10 flex flex-col sm:flex-row items-center gap-4"
+        >
+          <Link href="/register">
+            <motion.button
+              whileHover={{ scale: 1.03, boxShadow: '0 0 40px rgba(124,58,237,0.5)' }}
+              whileTap={{ scale: 0.97 }}
+              className="flex items-center gap-2.5 px-8 py-4 rounded-xl font-semibold text-white text-base group"
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                boxShadow: '0 4px 24px rgba(124,58,237,0.35)',
+              }}
+            >
+              Start Free Trial
+              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            </motion.button>
+          </Link>
+
+          <Link href="/pricing">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-8 py-4 rounded-xl font-medium text-white/70 hover:text-white text-base border border-white/10 hover:border-white/20 transition-colors"
+            >
+              View Pricing
+            </motion.button>
+          </Link>
+        </motion.div>
+
+        {/* Trust badges */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.45, duration: 0.5 }}
+          className="mt-8 flex flex-wrap items-center justify-center gap-6"
+        >
+          {[
+            { icon: Shield, text: 'No credit card required' },
+            { icon: Clock, text: 'Setup in 2 minutes' },
+            { icon: Sparkles, text: '14-day free trial' },
+          ].map(({ icon: Icon, text }) => (
+            <div key={text} className="flex items-center gap-1.5 text-sm text-white/35">
+              <Icon size={13} className="text-violet-400" />
+              {text}
+            </div>
+          ))}
+        </motion.div>
+
+        {/* ── Stats row ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="mt-16 w-full grid grid-cols-3 gap-4 max-w-lg mx-auto"
         >
           {[
             { value: '10x', label: 'More reviews' },
             { value: '5 sec', label: 'Per review' },
             { value: '4.9★', label: 'Avg rating boost' },
           ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p
-                className="font-bold"
+            <div
+              key={stat.label}
+              className="flex flex-col items-center py-5 rounded-2xl border border-white/8"
+              style={{ background: 'rgba(255,255,255,0.03)' }}
+            >
+              <span
+                className="font-bold text-2xl sm:text-3xl"
                 style={{
-                  fontSize: 'clamp(1.5rem, 3vw, 2.2rem)',
-                  background: 'linear-gradient(90deg, #27f3a9, #00c8ff)',
+                  background: 'linear-gradient(135deg, #a78bfa, #60a5fa)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
                 }}
               >
                 {stat.value}
-              </p>
-              <p className="text-white/40 text-xs mt-1">{stat.label}</p>
+              </span>
+              <span className="text-xs text-white/35 mt-1">{stat.label}</span>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* ── Review pills ── */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="mt-12 w-full"
+        >
+          <p className="text-xs text-white/25 mb-4 uppercase tracking-widest">
+            Real reviews generated by customers
+          </p>
+          <div className="flex gap-3 overflow-x-auto pb-2 justify-start sm:justify-center scrollbar-hide">
+            {[
+              { text: 'The biryani here is unreal 😍 Best in the city, no doubt!', name: 'Priya S.', stars: 5, delay: 0.65 },
+              { text: 'Yaar service ekdum mast thi! Staff super friendly. 5 stars easily!', name: 'Rahul M.', stars: 5, delay: 0.7 },
+              { text: 'Exceptional ambience and prompt service. Highly professional team.', name: 'Anita K.', stars: 5, delay: 0.75 },
+              { text: 'बहुत अच्छा अनुभव रहा। खाना लाजवाब था! ⭐', name: 'Suresh P.', stars: 5, delay: 0.8 },
+              { text: 'Loved the vibe! Quick service and amazing food. Coming back soon 🙌', name: 'Meera T.', stars: 5, delay: 0.85 },
+            ].map((r) => (
+              <ReviewPill key={r.name} {...r} />
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── How it works — 3 steps ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.5 }}
+          className="mt-16 w-full grid grid-cols-1 sm:grid-cols-3 gap-4"
+        >
+          {[
+            {
+              step: '01',
+              emoji: '📱',
+              title: 'Customer Scans QR',
+              desc: 'Place the QR code at your counter. Customer scans with their phone.',
+            },
+            {
+              step: '02',
+              emoji: '✨',
+              title: 'AI Writes the Review',
+              desc: 'Customer picks a star rating and tone. AI generates 3 ready-made reviews.',
+            },
+            {
+              step: '03',
+              emoji: '🌟',
+              title: 'Posted on Google',
+              desc: 'One tap copies the review and opens Google. Customer pastes and submits.',
+            },
+          ].map((item, i) => (
+            <div
+              key={item.step}
+              className="relative rounded-2xl p-6 text-left border border-white/8 overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.03)' }}
+            >
+              <div className="absolute top-4 right-4 text-4xl font-black text-white/5 select-none">
+                {item.step}
+              </div>
+              <div className="text-3xl mb-4">{item.emoji}</div>
+              <h3 className="font-semibold text-white text-sm mb-1.5">{item.title}</h3>
+              <p className="text-xs text-white/40 leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </motion.div>

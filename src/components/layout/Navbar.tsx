@@ -28,7 +28,9 @@ export function Navbar() {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        scrolled ? 'bg-white/90 backdrop-blur-xl shadow-sm border-b border-gray-100' : 'bg-transparent'
+        scrolled
+          ? 'bg-[#050510]/90 backdrop-blur-xl shadow-sm border-b border-white/5'
+          : 'bg-transparent'
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -38,8 +40,8 @@ export function Navbar() {
             <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-lg flex items-center justify-center">
               <Sparkles size={16} className="text-white" />
             </div>
-            <span className="font-bold text-gray-900 text-lg">
-              ReviewEase <span className="text-violet-600">AI</span>
+            <span className="font-bold text-white text-lg">
+              ReviewEase <span className="text-violet-400">AI</span>
             </span>
           </Link>
 
@@ -49,7 +51,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                className="text-sm font-medium text-white/60 hover:text-white transition-colors"
               >
                 {link.label}
               </Link>
@@ -59,7 +61,7 @@ export function Navbar() {
           {/* CTA */}
           <div className="hidden md:flex items-center gap-3">
             <Link href="/login">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/10">
                 Sign In
               </Button>
             </Link>
@@ -70,7 +72,7 @@ export function Navbar() {
 
           {/* Mobile toggle */}
           <button
-            className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            className="md:hidden p-2 rounded-lg text-white/60 hover:bg-white/10"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -83,21 +85,21 @@ export function Navbar() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="md:hidden bg-white border-b border-gray-100 px-4 py-4 space-y-3"
+          className="md:hidden bg-[#050510]/95 backdrop-blur-xl border-b border-white/10 px-4 py-4 space-y-3"
         >
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="block text-sm font-medium text-gray-700 py-2"
+              className="block text-sm font-medium text-white/70 hover:text-white py-2"
               onClick={() => setMobileOpen(false)}
             >
               {link.label}
             </Link>
           ))}
-          <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+          <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
             <Link href="/login" onClick={() => setMobileOpen(false)}>
-              <Button variant="secondary" size="sm" className="w-full">
+              <Button variant="secondary" size="sm" className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10">
                 Sign In
               </Button>
             </Link>
