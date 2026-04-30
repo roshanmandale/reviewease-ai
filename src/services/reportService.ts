@@ -4,17 +4,14 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   limit,
-  deleteDoc,
   doc,
   updateDoc,
   serverTimestamp,
   Timestamp,
   writeBatch,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { BusinessReport } from '@/types';
 import { getScanLogs, getReviewClicks } from './logService';
 
@@ -28,14 +25,12 @@ function tsToIso(ts: unknown): string {
   return new Date().toISOString();
 }
 
-/** Days remaining until nextDeletionDate. Returns null if not set. */
 export function getDaysUntilDeletion(nextDeletionDate?: string): number | null {
   if (!nextDeletionDate) return null;
   const diff = new Date(nextDeletionDate).getTime() - Date.now();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
-/** Urgency level for the countdown banner */
 export function getRetentionUrgency(daysLeft: number | null): 'red' | 'orange' | 'blue' | null {
   if (daysLeft === null) return null;
   if (daysLeft <= 3) return 'red';
@@ -43,213 +38,337 @@ export function getRetentionUrgency(daysLeft: number | null): 'red' | 'orange' |
   return 'blue';
 }
 
-// ─── PDF Generation (client-side, no external lib needed) ────────────────────
+// ─── Report HTML builder ──────────────────────────────────────────────────────
 
-/**
- * Generates a simple PDF report as a Blob using the browser's print API.
- * For production, replace with jsPDF or a server-side PDF generator.
- */
-export function generatePDFBlob(report: {
+export function buildReportHTML(data: {
   businessName: string;
+  category: string;
+  city: string;
+  ownerName: string;
   periodStart: string;
   periodEnd: string;
   totalScans: number;
   totalClicks: number;
   conversionRate: number;
   generatedAt: string;
-}): Blob {
-  const html = `<!DOCTYPE html>
-<html>
+  reportId: string;
+}): string {
+  const fmt = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+  const fmtTime = (iso: string) =>
+    new Date(iso).toLocaleString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+  return `<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>ReviewKaro Report — ${report.businessName}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ReviewKaro Report — ${data.businessName}</title>
   <style>
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; background: #fff; padding: 40px; }
-    .header { border-bottom: 3px solid #7c3aed; padding-bottom: 20px; margin-bottom: 32px; }
-    .logo { font-size: 22px; font-weight: 700; color: #7c3aed; }
-    .title { font-size: 28px; font-weight: 700; margin-top: 8px; }
-    .subtitle { color: #6b7280; font-size: 14px; margin-top: 4px; }
-    .period { background: #f5f3ff; border-radius: 8px; padding: 12px 16px; margin-bottom: 32px; font-size: 13px; color: #5b21b6; }
-    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
-    .stat { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; text-align: center; }
-    .stat-value { font-size: 36px; font-weight: 700; color: #7c3aed; }
-    .stat-label { font-size: 12px; color: #6b7280; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #9ca3af; }
-    .retention-note { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; font-size: 13px; color: #92400e; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #111827;
+      background: #ffffff;
+      padding: 0;
+    }
+    .page { max-width: 800px; margin: 0 auto; padding: 48px 40px; }
+
+    /* Header */
+    .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 2px solid #7c3aed; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #7c3aed, #4f46e5); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .brand-icon svg { width: 20px; height: 20px; fill: white; }
+    .brand-name { font-size: 20px; font-weight: 700; color: #7c3aed; }
+    .report-meta { text-align: right; }
+    .report-label { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; }
+    .report-id { font-size: 11px; color: #6b7280; font-family: monospace; margin-top: 2px; }
+
+    /* Business info */
+    .biz-section { margin-bottom: 32px; }
+    .biz-name { font-size: 28px; font-weight: 700; color: #111827; }
+    .biz-meta { font-size: 14px; color: #6b7280; margin-top: 4px; }
+    .biz-owner { font-size: 13px; color: #9ca3af; margin-top: 2px; }
+
+    /* Period */
+    .period-box { background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 12px; padding: 14px 18px; margin-bottom: 28px; display: flex; align-items: center; gap: 10px; }
+    .period-icon { font-size: 18px; }
+    .period-text { font-size: 14px; color: #5b21b6; font-weight: 500; }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px 16px; text-align: center; }
+    .stat-card.primary { background: linear-gradient(135deg, #7c3aed, #4f46e5); border-color: transparent; }
+    .stat-value { font-size: 40px; font-weight: 800; color: #7c3aed; line-height: 1; }
+    .stat-card.primary .stat-value { color: white; }
+    .stat-label { font-size: 11px; color: #9ca3af; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .stat-card.primary .stat-label { color: rgba(255,255,255,0.7); }
+
+    /* Breakdown */
+    .section-title { font-size: 15px; font-weight: 700; color: #374151; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #f3f4f6; }
+    .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f9fafb; font-size: 13px; }
+    .detail-label { color: #6b7280; }
+    .detail-value { font-weight: 600; color: #111827; }
+
+    /* Notice */
+    .notice { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 16px; margin-bottom: 28px; font-size: 12px; color: #92400e; display: flex; gap: 8px; align-items: flex-start; }
+
+    /* Footer */
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; }
+    .footer-left { font-size: 11px; color: #9ca3af; line-height: 1.6; }
+    .footer-brand { font-size: 12px; font-weight: 700; color: #7c3aed; }
+
+    /* Print button */
+    .print-btn { display: inline-flex; align-items: center; gap: 6px; background: #7c3aed; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 24px; }
+    .print-btn:hover { background: #6d28d9; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">ReviewKaro</div>
-    <div class="title">${report.businessName}</div>
-    <div class="subtitle">Analytics Report</div>
-  </div>
+  <div class="page">
 
-  <div class="period">
-    📅 Report Period: ${new Date(report.periodStart).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-    — ${new Date(report.periodEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-  </div>
-
-  <div class="retention-note">
-    ⚠️ Raw activity logs are stored for ${RETENTION_DAYS} days only. This PDF report is saved permanently.
-  </div>
-
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-value">${report.totalScans}</div>
-      <div class="stat-label">QR Scans</div>
+    <!-- Print button (hidden when printing) -->
+    <div class="no-print" style="margin-bottom: 20px;">
+      <button class="print-btn" onclick="window.print()">
+        🖨️ Save as PDF / Print
+      </button>
     </div>
-    <div class="stat">
-      <div class="stat-value">${report.totalClicks}</div>
-      <div class="stat-label">Review Clicks</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">${report.conversionRate}%</div>
-      <div class="stat-label">Conversion Rate</div>
-    </div>
-  </div>
 
-  <div class="footer">
-    Generated by ReviewKaro on ${new Date(report.generatedAt).toLocaleString('en-IN')}
-    <br />Reports are stored permanently. Raw logs are deleted after ${RETENTION_DAYS} days.
+    <!-- Header -->
+    <div class="header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <div>
+          <div class="brand-name">ReviewKaro</div>
+          <div style="font-size:11px;color:#9ca3af;">Analytics Report</div>
+        </div>
+      </div>
+      <div class="report-meta">
+        <div class="report-label">Report ID</div>
+        <div class="report-id">${data.reportId}</div>
+        <div class="report-label" style="margin-top:6px;">Generated</div>
+        <div style="font-size:11px;color:#6b7280;">${fmtTime(data.generatedAt)}</div>
+      </div>
+    </div>
+
+    <!-- Business Info -->
+    <div class="biz-section">
+      <div class="biz-name">${data.businessName}</div>
+      <div class="biz-meta">${data.category} &nbsp;·&nbsp; ${data.city}</div>
+      <div class="biz-owner">Owner: ${data.ownerName}</div>
+    </div>
+
+    <!-- Period -->
+    <div class="period-box">
+      <div class="period-icon">📅</div>
+      <div class="period-text">
+        Report Period: <strong>${fmt(data.periodStart)}</strong> — <strong>${fmt(data.periodEnd)}</strong>
+        &nbsp;(${RETENTION_DAYS} days)
+      </div>
+    </div>
+
+    <!-- Retention notice -->
+    <div class="notice">
+      <span>⚠️</span>
+      <span>Raw activity logs are stored for <strong>${RETENTION_DAYS} days</strong> only to protect customer privacy.
+      This report is saved permanently and can be downloaded anytime from your ReviewKaro dashboard.</span>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">${data.totalScans}</div>
+        <div class="stat-label">QR Scans</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${data.totalClicks}</div>
+        <div class="stat-label">Review Clicks</div>
+      </div>
+      <div class="stat-card primary">
+        <div class="stat-value">${data.conversionRate}%</div>
+        <div class="stat-label">Conversion Rate</div>
+      </div>
+    </div>
+
+    <!-- Detail breakdown -->
+    <div style="margin-bottom: 28px;">
+      <div class="section-title">Summary Breakdown</div>
+      <div class="detail-row">
+        <span class="detail-label">Total QR Code Scans</span>
+        <span class="detail-value">${data.totalScans}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Total Review Clicks (Copy & Post)</span>
+        <span class="detail-value">${data.totalClicks}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Conversion Rate (Scans → Reviews)</span>
+        <span class="detail-value">${data.conversionRate}%</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Scans Without Review</span>
+        <span class="detail-value">${data.totalScans - data.totalClicks}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Report Period (Days)</span>
+        <span class="detail-value">${RETENTION_DAYS} days</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Period Start</span>
+        <span class="detail-value">${fmt(data.periodStart)}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Period End</span>
+        <span class="detail-value">${fmt(data.periodEnd)}</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-left">
+        <div class="footer-brand">ReviewKaro</div>
+        <div>Turn happy customers into Google reviews in seconds.</div>
+        <div>Reports stored permanently · Raw logs deleted after ${RETENTION_DAYS} days</div>
+      </div>
+      <div style="text-align:right;font-size:11px;color:#9ca3af;">
+        <div>Generated: ${fmtTime(data.generatedAt)}</div>
+        <div>Report ID: ${data.reportId}</div>
+      </div>
+    </div>
+
   </div>
 </body>
 </html>`;
-
-  return new Blob([html], { type: 'text/html' });
 }
 
 // ─── Report CRUD ──────────────────────────────────────────────────────────────
 
-/** Fetch all reports for a business, newest first */
 export async function getReportsForBusiness(businessId: string): Promise<BusinessReport[]> {
-  const q = query(
-    collection(db, 'reports'),
-    where('businessId', '==', businessId),
-    limit(50)
+  const snap = await getDocs(
+    query(collection(db, 'reports'), where('businessId', '==', businessId), limit(50))
   );
-  const snap = await getDocs(q);
-  const reports = snap.docs.map((d) => {
-    const data = d.data();
-    return {
-      id: d.id,
-      businessId: data.businessId,
-      businessName: data.businessName,
-      ownerUid: data.ownerUid,
-      periodStart: tsToIso(data.periodStart),
-      periodEnd: tsToIso(data.periodEnd),
-      totalScans: data.totalScans || 0,
-      totalClicks: data.totalClicks || 0,
-      conversionRate: data.conversionRate || 0,
-      pdfUrl: data.pdfUrl || '',
-      generatedAt: tsToIso(data.generatedAt),
-    } as BusinessReport;
-  });
-  return reports.sort(
-    (a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
-  );
+  return snap.docs
+    .map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        businessId: data.businessId,
+        businessName: data.businessName,
+        ownerUid: data.ownerUid,
+        periodStart: tsToIso(data.periodStart),
+        periodEnd: tsToIso(data.periodEnd),
+        totalScans: data.totalScans || 0,
+        totalClicks: data.totalClicks || 0,
+        conversionRate: data.conversionRate || 0,
+        pdfUrl: data.pdfUrl || '',
+        generatedAt: tsToIso(data.generatedAt),
+      } as BusinessReport;
+    })
+    .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime());
 }
 
-/** Fetch all reports for an owner across all businesses */
 export async function getReportsForOwner(ownerUid: string): Promise<BusinessReport[]> {
-  const q = query(
-    collection(db, 'reports'),
-    where('ownerUid', '==', ownerUid),
-    limit(100)
+  const snap = await getDocs(
+    query(collection(db, 'reports'), where('ownerUid', '==', ownerUid), limit(100))
   );
-  const snap = await getDocs(q);
-  const reports = snap.docs.map((d) => {
-    const data = d.data();
-    return {
-      id: d.id,
-      businessId: data.businessId,
-      businessName: data.businessName,
-      ownerUid: data.ownerUid,
-      periodStart: tsToIso(data.periodStart),
-      periodEnd: tsToIso(data.periodEnd),
-      totalScans: data.totalScans || 0,
-      totalClicks: data.totalClicks || 0,
-      conversionRate: data.conversionRate || 0,
-      pdfUrl: data.pdfUrl || '',
-      generatedAt: tsToIso(data.generatedAt),
-    } as BusinessReport;
-  });
-  return reports.sort(
-    (a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
-  );
+  return snap.docs
+    .map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        businessId: data.businessId,
+        businessName: data.businessName,
+        ownerUid: data.ownerUid,
+        periodStart: tsToIso(data.periodStart),
+        periodEnd: tsToIso(data.periodEnd),
+        totalScans: data.totalScans || 0,
+        totalClicks: data.totalClicks || 0,
+        conversionRate: data.conversionRate || 0,
+        pdfUrl: data.pdfUrl || '',
+        generatedAt: tsToIso(data.generatedAt),
+      } as BusinessReport;
+    })
+    .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime());
 }
 
-// ─── Core retention job (runs client-side, triggered manually or on schedule) ─
+// ─── Core: generate report + save to Firestore + delete old logs ──────────────
 
-/**
- * Generate a PDF report for a business, upload to Storage, save to Firestore,
- * update business retention fields, then delete old logs.
- *
- * SAFETY: Deletion only happens AFTER PDF is successfully uploaded.
- */
 export async function runRetentionForBusiness(
   businessId: string,
   businessName: string,
-  ownerUid: string
-): Promise<{ success: boolean; reportId?: string; error?: string }> {
+  ownerUid: string,
+  ownerName: string = 'Owner',
+  category: string = '',
+  city: string = ''
+): Promise<{ success: boolean; reportId?: string; htmlContent?: string; error?: string }> {
   try {
     const now = new Date();
-    const endDate = now;
     const startDate = new Date(now.getTime() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
 
-    // 1. Fetch logs for the retention window
+    // 1. Fetch logs
     const [scans, clicks] = await Promise.all([
       getScanLogs(businessId),
       getReviewClicks(businessId),
     ]);
 
-    // Filter to retention window
-    const windowScans = scans.filter(
-      (s) => new Date(s.timestamp) >= startDate && new Date(s.timestamp) <= endDate
-    );
-    const windowClicks = clicks.filter(
-      (c) => new Date(c.timestamp) >= startDate && new Date(c.timestamp) <= endDate
-    );
+    const windowScans  = scans.filter((s) => new Date(s.timestamp) >= startDate);
+    const windowClicks = clicks.filter((c) => new Date(c.timestamp) >= startDate);
+    const totalScans   = windowScans.length;
+    const totalClicks  = windowClicks.length;
+    const conversionRate = totalScans > 0 ? Math.round((totalClicks / totalScans) * 100) : 0;
 
-    const totalScans = windowScans.length;
-    const totalClicks = windowClicks.length;
-    const conversionRate =
-      totalScans > 0 ? Math.round((totalClicks / totalScans) * 100) : 0;
-
-    // 2. Generate PDF blob
-    const reportData = {
-      businessName,
-      periodStart: startDate.toISOString(),
-      periodEnd: endDate.toISOString(),
-      totalScans,
-      totalClicks,
-      conversionRate,
-      generatedAt: now.toISOString(),
-    };
-    const pdfBlob = generatePDFBlob(reportData);
-
-    // 3. Upload to Firebase Storage
-    const fileName = `reports/${ownerUid}/${businessId}/${now.getTime()}.html`;
-    const storageRef = ref(storage, fileName);
-    await uploadBytes(storageRef, pdfBlob, { contentType: 'text/html' });
-    const pdfUrl = await getDownloadURL(storageRef);
-
-    // 4. Save report to Firestore
+    // 2. Save report record to Firestore first (get the ID)
     const reportRef = await addDoc(collection(db, 'reports'), {
       businessId,
       businessName,
       ownerUid,
       periodStart: startDate.toISOString(),
-      periodEnd: endDate.toISOString(),
+      periodEnd: now.toISOString(),
       totalScans,
       totalClicks,
       conversionRate,
-      pdfUrl,
+      pdfUrl: '',          // will be updated below
       generatedAt: serverTimestamp(),
     });
 
-    // 5. Update business retention fields
+    // 3. Build HTML report with the real report ID
+    const htmlContent = buildReportHTML({
+      businessName,
+      category,
+      city,
+      ownerName,
+      periodStart: startDate.toISOString(),
+      periodEnd: now.toISOString(),
+      totalScans,
+      totalClicks,
+      conversionRate,
+      generatedAt: now.toISOString(),
+      reportId: reportRef.id,
+    });
+
+    // 4. Store HTML as a data URL so it can be opened without Firebase Storage
+    const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
+
+    // 5. Update report with the data URL
+    await updateDoc(doc(db, 'reports', reportRef.id), { pdfUrl: dataUrl });
+
+    // 6. Update business retention fields
     const nextDeletion = new Date(now.getTime() + RETENTION_DAYS * 24 * 60 * 60 * 1000);
     await updateDoc(doc(db, 'businesses', businessId), {
       lastReportGeneratedAt: serverTimestamp(),
@@ -257,54 +376,40 @@ export async function runRetentionForBusiness(
       updatedAt: serverTimestamp(),
     });
 
-    // 6. Delete old logs (ONLY after PDF success)
-    const cutoff = startDate.toISOString();
-    await deleteOldLogs(businessId, cutoff);
+    // 7. Delete old logs ONLY after report is saved
+    await deleteOldLogs(businessId, startDate);
 
-    return { success: true, reportId: reportRef.id };
+    return { success: true, reportId: reportRef.id, htmlContent };
   } catch (err) {
-    console.error('[retention] Failed for business', businessId, err);
+    console.error('[retention] Failed for', businessId, err);
     return { success: false, error: (err as Error).message };
   }
 }
 
-/**
- * Delete scan_logs and review_clicks older than the cutoff date for a business.
- * Uses client-side filtering since we can't do range queries without composite indexes.
- */
-async function deleteOldLogs(businessId: string, cutoffIso: string): Promise<void> {
-  const cutoff = new Date(cutoffIso);
-
-  // Fetch all logs for this business
+async function deleteOldLogs(businessId: string, cutoff: Date): Promise<void> {
   const [scanSnap, clickSnap] = await Promise.all([
     getDocs(query(collection(db, 'scan_logs'), where('businessId', '==', businessId))),
     getDocs(query(collection(db, 'review_clicks'), where('businessId', '==', businessId))),
   ]);
 
-  // Batch delete old ones
-  const batch = writeBatch(db);
-  let count = 0;
+  const toDelete = [
+    ...scanSnap.docs.filter((d) => {
+      const ts = d.data().timestamp;
+      return (ts instanceof Timestamp ? ts.toDate() : new Date(ts)) < cutoff;
+    }),
+    ...clickSnap.docs.filter((d) => {
+      const ts = d.data().timestamp;
+      return (ts instanceof Timestamp ? ts.toDate() : new Date(ts)) < cutoff;
+    }),
+  ];
 
-  scanSnap.docs.forEach((d) => {
-    const ts = d.data().timestamp;
-    const date = ts instanceof Timestamp ? ts.toDate() : new Date(ts);
-    if (date < cutoff) {
-      batch.delete(d.ref);
-      count++;
-    }
-  });
-
-  clickSnap.docs.forEach((d) => {
-    const ts = d.data().timestamp;
-    const date = ts instanceof Timestamp ? ts.toDate() : new Date(ts);
-    if (date < cutoff) {
-      batch.delete(d.ref);
-      count++;
-    }
-  });
-
-  if (count > 0) {
+  for (let i = 0; i < toDelete.length; i += 400) {
+    const batch = writeBatch(db);
+    toDelete.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
     await batch.commit();
-    console.log(`[retention] Deleted ${count} old log entries for business ${businessId}`);
+  }
+
+  if (toDelete.length > 0) {
+    console.log(`[retention] Deleted ${toDelete.length} old logs for ${businessId}`);
   }
 }

@@ -81,15 +81,31 @@ export default function ReportsPage() {
     if (!user?.uid) return;
     setGenerating(businessId);
     try {
-      const result = await runRetentionForBusiness(businessId, businessName, user.uid);
+      const biz = businesses.find((b) => b.id === businessId);
+      const result = await runRetentionForBusiness(
+        businessId,
+        businessName,
+        user.uid,
+        user.name || 'Owner',
+        biz?.category || '',
+        biz?.city || ''
+      );
       if (result.success) {
-        toast.success(`Report generated for ${businessName}!`);
+        toast.success(`Report generated for ${businessName}! Opening...`);
         await fetchReports();
+        // Open the report immediately
+        if (result.htmlContent) {
+          const blob = new Blob([result.htmlContent], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        }
       } else {
-        toast.error(`Failed: ${result.error}`);
+        toast.error(`Failed to generate report: ${result.error}`);
       }
-    } catch {
-      toast.error('Failed to generate report');
+    } catch (err) {
+      toast.error('Failed to generate report. Check console for details.');
+      console.error(err);
     } finally {
       setGenerating(null);
     }
@@ -101,6 +117,25 @@ export default function ReportsPage() {
     acc[r.businessId].push(r);
     return acc;
   }, {});
+
+  // Open a report — data URL reports open as blob, external URLs open directly
+  const openReport = (pdfUrl: string, businessName: string) => {
+    if (pdfUrl.startsWith('data:')) {
+      // Decode data URL and open as blob
+      try {
+        const html = decodeURIComponent(pdfUrl.replace('data:text/html;charset=utf-8,', ''));
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 15000);
+      } catch {
+        // Fallback: open data URL directly
+        window.open(pdfUrl, '_blank');
+      }
+    } else {
+      window.open(pdfUrl, '_blank');
+    }
+  };
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -224,15 +259,13 @@ export default function ReportsPage() {
 
                       {/* Last report */}
                       {latestReport ? (
-                        <a
-                          href={latestReport.pdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => openReport(latestReport.pdfUrl, latestReport.businessName)}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-xl transition-colors"
                         >
                           <Download size={12} />
                           Latest Report
-                        </a>
+                        </button>
                       ) : null}
 
                       {/* Generate button */}
@@ -270,15 +303,13 @@ export default function ReportsPage() {
                                 · {report.totalScans} scans · {report.totalClicks} clicks · {report.conversionRate}%
                               </span>
                             </div>
-                            <a
-                              href={report.pdfUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={() => openReport(report.pdfUrl, report.businessName)}
                               className="text-violet-600 hover:text-violet-800 font-medium flex items-center gap-1"
                             >
                               <Download size={11} />
                               Download
-                            </a>
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -338,15 +369,13 @@ export default function ReportsPage() {
                           {formatDate(report.generatedAt)}
                         </td>
                         <td className="px-5 py-3.5 text-right">
-                          <a
-                            href={report.pdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={() => openReport(report.pdfUrl, report.businessName)}
                             className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-600 hover:text-violet-800 transition-colors"
                           >
                             <Download size={13} />
-                            Download
-                          </a>
+                            Open Report
+                          </button>
                         </td>
                       </tr>
                     ))
