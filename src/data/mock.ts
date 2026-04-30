@@ -87,7 +87,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: 'free',
     name: 'Free',
     price: 0,
-    description: 'Perfect for trying out ReviewEase AI',
+    description: 'Perfect for trying out ReviewKaro',
     features: [
       '1 business location',
       '50 QR scans/month',
@@ -163,7 +163,7 @@ export const TESTIMONIALS = [
     role: 'Owner, The Spice Garden',
     avatar: '',
     rating: 5,
-    text: 'ReviewEase AI transformed our Google reviews. We went from 45 reviews to 180 in just 2 months. The QR code at our counter does all the work!',
+    text: 'ReviewKaro transformed our Google reviews. We went from 45 reviews to 180 in just 2 months. The QR code at our counter does all the work!',
   },
   {
     id: '2',
@@ -193,7 +193,7 @@ export const TESTIMONIALS = [
 
 export const FAQS = [
   {
-    q: 'How does ReviewEase AI work?',
+    q: 'How does ReviewKaro work?',
     a: 'You place a QR code at your business. Customers scan it, select a star rating, choose a review style, and our AI generates 3 ready-made reviews. They pick one, copy it, and get redirected to your Google review page to paste and submit.',
   },
   {

@@ -1,6 +1,6 @@
 {
-  "name": "ReviewEase AI",
-  "short_name": "ReviewEase",
+  "name": "ReviewKaro",
+  "short_name": "ReviewKaro",
   "description": "Turn happy customers into Google reviews in seconds",
   "start_url": "/dashboard",
   "scope": "/",

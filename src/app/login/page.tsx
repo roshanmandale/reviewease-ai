@@ -51,7 +51,7 @@ export default function LoginPage() {
   const handleDemoLogin = async () => {
     setLoading(true);
     try {
-      await login('demo@reviewease.ai', 'demo123456');
+      await login('demo@reviewkaro.app', 'demo123456');
       toast.success('Logged in as demo user');
       router.push('/dashboard');
     } catch {
@@ -84,7 +84,7 @@ export default function LoginPage() {
                 <Sparkles size={20} className="text-white" />
               </div>
               <span className="font-bold text-white text-xl">
-                ReviewEase <span className="text-violet-400">AI</span>
+                ReviewKaro
               </span>
             </Link>
             <h1 className="text-2xl font-bold text-white">Welcome back</h1>

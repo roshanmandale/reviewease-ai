@@ -14,7 +14,7 @@ export function Footer() {
                 <Sparkles size={16} className="text-white" />
               </div>
               <span className="font-bold text-white text-lg">
-                ReviewEase <span className="text-violet-400">AI</span>
+                ReviewKaro
               </span>
             </Link>
             <p className="text-sm leading-relaxed">
@@ -77,7 +77,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm">© 2024 ReviewEase AI. All rights reserved.</p>
+          <p className="text-sm">© 2024 ReviewKaro. All rights reserved.</p>
           <p className="text-sm">Made with ❤️ for local businesses in India</p>
         </div>
       </div>

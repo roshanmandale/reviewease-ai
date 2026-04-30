@@ -123,7 +123,7 @@ export function Hero() {
                     <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
                   </div>
                   <div className="flex-1 bg-white/5 rounded-md px-3 py-1 text-xs text-gray-500 text-center">
-                    reviewease.ai/b/the-spice-garden
+                    reviewkaro.app/b/the-spice-garden
                   </div>
                 </div>
                 {/* Mock review page */}

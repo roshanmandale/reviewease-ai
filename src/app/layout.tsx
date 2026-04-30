@@ -5,7 +5,7 @@ import { ServiceWorkerRegistrar } from '@/components/ServiceWorkerRegistrar';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'ReviewEase AI — Turn Happy Customers Into Google Reviews',
+  title: 'ReviewKaro — Turn Happy Customers Into Google Reviews',
   description:
     'QR-powered AI review generation for local businesses. One scan, one click, one 5-star Google review.',
   keywords: 'google reviews, local business, QR code, AI reviews, review generation',
@@ -13,10 +13,10 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'ReviewEase AI',
+    title: 'ReviewKaro',
   },
   openGraph: {
-    title: 'ReviewEase AI',
+    title: 'ReviewKaro',
     description: 'Turn happy customers into Google reviews in seconds.',
     type: 'website',
   },
@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="ReviewEase AI" />
+        <meta name="apple-mobile-web-app-title" content="ReviewKaro" />
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
       </head>
       <body>

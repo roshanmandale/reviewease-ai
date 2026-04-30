@@ -407,7 +407,7 @@ export default function ReviewPage() {
         {/* Powered by */}
         <p className="text-center text-xs text-gray-400 mt-4 flex items-center justify-center gap-1">
           Powered by <Sparkles size={11} className="text-violet-400" />
-          <span className="text-violet-500 font-medium">ReviewEase AI</span>
+          <span className="text-violet-500 font-medium">ReviewKaro</span>
         </p>
       </div>
     </div>

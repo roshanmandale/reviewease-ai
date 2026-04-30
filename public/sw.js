@@ -1,7 +1,7 @@
-// ReviewEase AI — Service Worker
+// ReviewKaro — Service Worker
 // Enables PWA install prompt and offline support
 
-const CACHE_NAME = 'reviewease-ai-v1';
+const CACHE_NAME = 'reviewkaro-v1';
 
 // Files to cache for offline use
 const STATIC_ASSETS = [

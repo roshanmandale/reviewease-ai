@@ -40,7 +40,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(form.name, form.email, form.password);
-      toast.success('Account created! Welcome to ReviewEase AI 🎉');
+      toast.success('Account created! Welcome to ReviewKaro 🎉');
       router.push('/dashboard');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
@@ -74,7 +74,7 @@ export default function RegisterPage() {
                 <Sparkles size={20} className="text-white" />
               </div>
               <span className="font-bold text-white text-xl">
-                ReviewEase <span className="text-violet-400">AI</span>
+                ReviewKaro
               </span>
             </Link>
             <h1 className="text-2xl font-bold text-white">Create your account</h1>

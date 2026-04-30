@@ -70,7 +70,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     await installPrompt.prompt();
     const { outcome } = await installPrompt.userChoice;
     if (outcome === 'accepted') {
-      toast.success('ReviewEase AI added to home screen! 🎉');
+      toast.success('ReviewKaro added to home screen! 🎉');
       setInstallPrompt(null);
       setShowInstallBanner(false);
     }
@@ -85,7 +85,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <Sparkles size={16} className="text-white" />
           </div>
           <span className="font-bold text-gray-900">
-            ReviewEase <span className="text-violet-600">AI</span>
+            ReviewKaro
           </span>
         </Link>
       </div>
@@ -229,7 +229,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <Sparkles size={16} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold">Install ReviewEase AI</p>
+                  <p className="text-sm font-semibold">Install ReviewKaro</p>
                   <p className="text-xs text-violet-200">Add to home screen for quick access</p>
                 </div>
               </div>

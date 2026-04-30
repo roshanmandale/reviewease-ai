@@ -42,7 +42,7 @@ export function CTASection() {
           transition={{ delay: 0.2 }}
           className="mt-5 text-xl text-violet-200 max-w-2xl mx-auto"
         >
-          Contact us to get your business set up on ReviewEase AI and start turning
+          Contact us to get your business set up on ReviewKaro and start turning
           happy customers into 5-star Google reviews.
         </motion.p>
 

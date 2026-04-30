@@ -143,7 +143,7 @@ export function InstallAppCard() {
             <div className="flex-1 min-w-0 pr-6">
               <h3 className="font-bold text-gray-900 text-base">Add to Home Screen</h3>
               <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">
-                Install ReviewEase AI on your phone — open it like an app, stay logged in.
+                Install ReviewKaro on your phone — open it like an app, stay logged in.
               </p>
 
               {/* Android — native install button */}

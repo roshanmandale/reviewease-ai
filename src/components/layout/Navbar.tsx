@@ -40,7 +40,7 @@ export function Navbar() {
               <Sparkles size={16} className="text-white" />
             </div>
             <span className="font-bold text-white text-lg">
-              ReviewEase <span className="text-violet-400">AI</span>
+              ReviewKaro
             </span>
           </Link>
 

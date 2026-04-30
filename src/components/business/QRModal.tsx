@@ -18,7 +18,7 @@ export function QRModal({ business, open, onClose }: QRModalProps) {
 
   if (!business) return null;
 
-  const reviewUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://reviewease.ai'}/b/${business.slug}`;
+  const reviewUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://reviewkaro.app'}/b/${business.slug}`;
 
   const handleDownload = () => {
     const svg = qrRef.current?.querySelector('svg');

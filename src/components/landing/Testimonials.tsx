@@ -35,7 +35,7 @@ export function Testimonials() {
             transition={{ delay: 0.2 }}
             className="mt-4 text-lg text-gray-500 max-w-xl mx-auto"
           >
-            See how ReviewEase AI is transforming Google ratings for businesses across India.
+            See how ReviewKaro is transforming Google ratings for businesses across India.
           </motion.p>
         </div>
 
