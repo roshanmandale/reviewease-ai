@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { ReviewTone } from '@/types';
 
 interface Tone {
@@ -9,132 +8,89 @@ interface Tone {
   label: string;
   sublabel: string;
   emoji: string;
-  gradient: string;
 }
 
 const TONES: Tone[] = [
-  {
-    value: 'Friendly',
-    label: 'Friendly',
-    sublabel: 'Warm & casual',
-    emoji: '😊',
-    gradient: 'from-orange-400 to-pink-400',
-  },
-  {
-    value: 'Professional',
-    label: 'Professional',
-    sublabel: 'Formal & polished',
-    emoji: '💼',
-    gradient: 'from-blue-500 to-indigo-500',
-  },
-  {
-    value: 'Hindi',
-    label: 'हिंदी',
-    sublabel: 'Pure Hindi',
-    emoji: '🇮🇳',
-    gradient: 'from-green-500 to-emerald-500',
-  },
-  {
-    value: 'Hinglish',
-    label: 'Hinglish',
-    sublabel: 'Hindi + English mix',
-    emoji: '🤙',
-    gradient: 'from-violet-500 to-purple-500',
-  },
-  {
-    value: 'Short',
-    label: 'Short & Crisp',
-    sublabel: 'Under 10 words',
-    emoji: '⚡',
-    gradient: 'from-amber-400 to-yellow-400',
-  },
+  { value: 'Friendly',     label: 'Friendly',      sublabel: 'Warm & casual',       emoji: '😊' },
+  { value: 'Professional', label: 'Professional',  sublabel: 'Formal & polished',   emoji: '💼' },
+  { value: 'Hindi',        label: 'हिंदी',          sublabel: 'Pure Hindi',          emoji: '🇮🇳' },
+  { value: 'Hinglish',     label: 'Hinglish',      sublabel: 'Hindi + English mix', emoji: '🤙' },
+  { value: 'Short',        label: 'Short & Crisp', sublabel: 'Under 10 words',      emoji: '⚡' },
 ];
 
 interface ToneSelectorProps {
   value: ReviewTone;
   onChange: (tone: ReviewTone) => void;
+  brandColor?: string;
 }
 
-export function ToneSelector({ value, onChange }: ToneSelectorProps) {
+export function ToneSelector({ value, onChange, brandColor = '#7c3aed' }: ToneSelectorProps) {
   return (
-    <div className="grid grid-cols-2 gap-2.5">
+    <div className="grid grid-cols-2 gap-2">
       {TONES.map((tone, i) => {
         const selected = value === tone.value;
-        // Last item spans full width if odd count
         const isLast = i === TONES.length - 1 && TONES.length % 2 !== 0;
 
         return (
-          <motion.button
+          <button
             key={tone.value}
             type="button"
             onClick={() => onChange(tone.value)}
-            whileTap={{ scale: 0.96 }}
-            whileHover={{ y: -2 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
             className={`
-              relative overflow-hidden rounded-2xl p-3.5 text-left transition-all duration-200
+              relative rounded-2xl p-3.5 text-left transition-all duration-150 active:scale-[0.98]
               ${isLast ? 'col-span-2' : ''}
               ${selected
-                ? 'ring-2 ring-white/80 shadow-lg'
-                : 'bg-white/8 hover:bg-white/12 ring-1 ring-white/10'
+                ? 'border-2 shadow-sm'
+                : 'border border-gray-100 bg-gray-50 hover:bg-gray-100 hover:border-gray-200'
               }
             `}
             style={
               selected
                 ? {
-                    background: `linear-gradient(135deg, var(--tw-gradient-from), var(--tw-gradient-to))`,
+                    borderColor: brandColor,
+                    backgroundColor: `${brandColor}0d`,
+                    boxShadow: `0 2px 12px ${brandColor}20`,
                   }
                 : {}
             }
           >
-            {/* Gradient background when selected */}
-            {selected && (
-              <motion.div
-                layoutId="toneSelected"
-                className={`absolute inset-0 bg-gradient-to-br ${tone.gradient} opacity-90`}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              />
-            )}
-
-            <div className="relative z-10 flex items-center gap-2.5">
-              {/* Emoji bubble */}
+            <div className="flex items-center gap-2.5">
+              {/* Emoji */}
               <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
-                  selected ? 'bg-white/20' : 'bg-white/10'
-                }`}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                style={
+                  selected
+                    ? { backgroundColor: `${brandColor}18` }
+                    : { backgroundColor: 'rgba(0,0,0,0.04)' }
+                }
               >
                 {tone.emoji}
               </div>
-              <div>
+
+              {/* Text */}
+              <div className="flex-1 min-w-0">
                 <p
-                  className={`text-sm font-semibold leading-tight ${
-                    selected ? 'text-white' : 'text-white/80'
-                  }`}
+                  className="text-sm font-semibold leading-tight truncate"
+                  style={{ color: selected ? brandColor : '#374151' }}
                 >
                   {tone.label}
                 </p>
-                <p
-                  className={`text-xs mt-0.5 ${
-                    selected ? 'text-white/80' : 'text-white/40'
-                  }`}
-                >
-                  {tone.sublabel}
-                </p>
+                <p className="text-xs mt-0.5 text-gray-400 truncate">{tone.sublabel}</p>
               </div>
-              {/* Selected checkmark */}
+
+              {/* Selected dot */}
               {selected && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="ml-auto w-5 h-5 rounded-full bg-white/30 flex items-center justify-center flex-shrink-0"
+                <div
+                  className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: brandColor }}
                 >
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                    <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                </motion.div>
+                </div>
               )}
             </div>
-          </motion.button>
+          </button>
         );
       })}
     </div>

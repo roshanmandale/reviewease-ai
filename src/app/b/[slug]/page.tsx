@@ -145,25 +145,20 @@ export default function ReviewPage() {
   // ── Not found ──
   if (notFound) {
     return (
-      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-white flex items-center justify-center p-6">
         <div className="text-center">
           <div className="text-6xl mb-5">🔍</div>
-          <h1 className="text-2xl font-bold text-white">Page Not Found</h1>
-          <p className="text-white/50 mt-2 text-sm">This review page doesn&apos;t exist or has been deactivated.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Page Not Found</h1>
+          <p className="text-gray-400 mt-2 text-sm">This review page doesn&apos;t exist or has been deactivated.</p>
         </div>
       </div>
     );
   }
 
-  // ── Loading ──
   if (!business) {
     return (
-      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full"
-        />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -171,20 +166,11 @@ export default function ReviewPage() {
   const progressPct = step === 'rating' ? 20 : step === 'tone' ? 50 : step === 'reviews' ? 80 : 100;
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
-      style={{ background: 'linear-gradient(160deg, #0a0a14 0%, #0f0a1e 50%, #0a0a14 100%)' }}
-    >
-      {/* Background glows */}
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Very subtle top tint */}
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse, ${business.brandColor}25 0%, transparent 70%)`,
-        }}
-      />
-      <div
-        className="absolute bottom-0 right-0 w-[300px] h-[300px] pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse, rgba(99,102,241,0.08) 0%, transparent 70%)' }}
+        className="absolute top-0 left-0 right-0 h-64 pointer-events-none"
+        style={{ background: `linear-gradient(180deg, ${business.brandColor}08 0%, transparent 100%)` }}
       />
 
       <div className="w-full max-w-sm relative z-10">
@@ -227,7 +213,7 @@ export default function ReviewPage() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-xl font-bold text-white"
+            className="text-xl font-bold text-gray-900"
           >
             {business.name}
           </motion.h1>
@@ -235,7 +221,7 @@ export default function ReviewPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.25 }}
-            className="text-sm text-white/40 mt-1"
+            className="text-sm text-gray-400 mt-1"
           >
             {business.category} · {business.city}
           </motion.p>
@@ -246,21 +232,16 @@ export default function ReviewPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, type: 'spring', stiffness: 260, damping: 24 }}
-          className="rounded-3xl overflow-hidden"
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
-          }}
+          className="bg-white rounded-3xl overflow-hidden border border-gray-100"
+          style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}
         >
           {/* Progress bar */}
-          <div className="h-0.5 bg-white/5">
+          <div className="h-1 bg-gray-100">
             <motion.div
               className="h-full rounded-full"
-              style={{ background: `linear-gradient(90deg, ${business.brandColor}, ${business.brandColor}aa)` }}
+              style={{ background: `linear-gradient(90deg, ${business.brandColor}, ${business.brandColor}bb)` }}
               animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.5, ease: 'easeInOut' }}
+              transition={{ duration: 0.45, ease: 'easeInOut' }}
             />
           </div>
 
@@ -280,8 +261,8 @@ export default function ReviewPage() {
                   className="space-y-7"
                 >
                   <div className="text-center">
-                    <h2 className="text-xl font-bold text-white">How was your experience?</h2>
-                    <p className="text-sm text-white/40 mt-1.5">Tap a star to rate your visit</p>
+                    <h2 className="text-xl font-bold text-gray-900">How was your experience?</h2>
+                    <p className="text-sm text-gray-400 mt-1.5">Tap a star to rate your visit</p>
                   </div>
 
                   <div className="flex justify-center">
@@ -345,13 +326,13 @@ export default function ReviewPage() {
                         <Star key={i} size={16} style={{ color: business.brandColor, fill: business.brandColor }} />
                       ))}
                     </div>
-                    <h2 className="text-xl font-bold text-white">Choose Your Review Style</h2>
-                    <p className="text-sm text-white/40 mt-1.5">
+                    <h2 className="text-xl font-bold text-gray-900">Choose Your Review Style</h2>
+                    <p className="text-sm text-gray-400 mt-1.5">
                       Select the tone that best matches how you feel
                     </p>
                   </div>
 
-                  <ToneSelector value={tone} onChange={setTone} />
+                  <ToneSelector value={tone} onChange={setTone} brandColor={business.brandColor} />
 
                   <motion.button
                     onClick={handleGenerateReviews}
@@ -369,7 +350,7 @@ export default function ReviewPage() {
 
                   <button
                     onClick={() => goTo('rating')}
-                    className="w-full flex items-center justify-center gap-1.5 text-sm text-white/30 hover:text-white/60 transition-colors py-1"
+                    className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors py-1"
                   >
                     <ArrowLeft size={13} />
                     Back
@@ -390,8 +371,8 @@ export default function ReviewPage() {
                   className="space-y-4"
                 >
                   <div className="text-center">
-                    <h2 className="text-xl font-bold text-white">Pick Your Review</h2>
-                    <p className="text-sm text-white/40 mt-1.5">
+                    <h2 className="text-xl font-bold text-gray-900">Pick Your Review</h2>
+                    <p className="text-sm text-gray-400 mt-1.5">
                       Select one, copy it, and paste it on Google
                     </p>
                   </div>
@@ -404,10 +385,10 @@ export default function ReviewPage() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: [0.3, 0.6, 0.3] }}
                           transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
-                          className="h-16 rounded-2xl bg-white/8"
+                          className="h-16 rounded-2xl bg-gray-100"
                         />
                       ))}
-                      <p className="text-center text-xs text-white/30 pt-1">
+                      <p className="text-center text-xs text-gray-400 pt-1">
                         Crafting personalised reviews…
                       </p>
                     </div>
@@ -420,6 +401,7 @@ export default function ReviewPage() {
                           selected={selectedReview === review}
                           onSelect={() => setSelectedReview(review)}
                           index={i}
+                          brandColor={business.brandColor}
                         />
                       ))}
                     </div>
@@ -447,7 +429,7 @@ export default function ReviewPage() {
 
                       <button
                         onClick={() => { setReviews([]); setSelectedReview(null); handleGenerateReviews(); }}
-                        className="w-full flex items-center justify-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors py-1"
+                        className="w-full flex items-center justify-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors py-1"
                       >
                         <RefreshCw size={12} />
                         Generate different options
@@ -476,18 +458,17 @@ export default function ReviewPage() {
                   </motion.div>
 
                   <div>
-                    <h2 className="text-xl font-bold text-white">Thank You!</h2>
-                    <p className="text-sm text-white/50 mt-1.5 leading-relaxed">
+                    <h2 className="text-xl font-bold text-gray-900">Thank You!</h2>
+                    <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
                       Your review has been copied to your clipboard. Open Google and paste it to complete your review.
                     </p>
                   </div>
 
                   <div
-                    className="rounded-2xl p-4 text-left"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    className="rounded-2xl p-4 text-left bg-gray-50 border border-gray-100"
                   >
-                    <p className="text-xs text-white/40 mb-1.5 font-medium uppercase tracking-wide">Your review</p>
-                    <p className="text-sm text-white/80 italic leading-relaxed">&ldquo;{selectedReview}&rdquo;</p>
+                    <p className="text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wide">Your review</p>
+                    <p className="text-sm text-gray-700 italic leading-relaxed">&ldquo;{selectedReview}&rdquo;</p>
                   </div>
 
                   <a href={getGoogleReviewUrl(business.placeId)} target="_blank" rel="noopener noreferrer">
@@ -516,11 +497,11 @@ export default function ReviewPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="text-center text-xs text-white/20 mt-5 flex items-center justify-center gap-1.5"
+          className="text-center text-xs text-gray-400 mt-5 flex items-center justify-center gap-1.5"
         >
           Powered by
-          <Sparkles size={10} className="text-violet-400" />
-          <span className="text-violet-400/70 font-medium">ReviewKaro</span>
+          <Sparkles size={10} className="text-violet-500" />
+          <span className="text-violet-500 font-medium">ReviewKaro</span>
         </motion.p>
       </div>
     </div>
