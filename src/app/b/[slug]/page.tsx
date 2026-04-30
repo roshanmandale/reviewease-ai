@@ -3,18 +3,44 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ExternalLink, Copy, Check, Star, RefreshCw, ChevronRight } from 'lucide-react';
+import {
+  Sparkles,
+  ExternalLink,
+  Copy,
+  Check,
+  Star,
+  RefreshCw,
+  ChevronRight,
+  ArrowLeft,
+} from 'lucide-react';
 import { Business, ReviewTone } from '@/types';
 import { getBusinessBySlug } from '@/services/businessService';
 import { logScan, logReviewClick } from '@/services/logService';
 import { StarRating } from '@/components/review/StarRating';
 import { ToneSelector } from '@/components/review/ToneSelector';
 import { ReviewCard } from '@/components/review/ReviewCard';
-import { Button } from '@/components/ui/Button';
 import { getGoogleReviewUrl, copyToClipboard, getInitials, getDeviceType } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 type Step = 'rating' | 'tone' | 'reviews' | 'done';
+
+const STEP_INDEX: Record<Step, number> = { rating: 0, tone: 1, reviews: 2, done: 3 };
+
+const ratingConfig = [
+  { label: '', emoji: '' },
+  { label: 'Poor', emoji: '😞' },
+  { label: 'Fair', emoji: '😐' },
+  { label: 'Good', emoji: '🙂' },
+  { label: 'Great', emoji: '😄' },
+  { label: 'Amazing!', emoji: '🤩' },
+];
+
+// Page-level slide animation
+const pageVariants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 40 : -40 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -40 : 40 }),
+};
 
 export default function ReviewPage() {
   const params = useParams();
@@ -23,6 +49,7 @@ export default function ReviewPage() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [step, setStep] = useState<Step>('rating');
+  const [direction, setDirection] = useState(1);
   const [rating, setRating] = useState(0);
   const [tone, setTone] = useState<ReviewTone>('Friendly');
   const [reviews, setReviews] = useState<string[]>([]);
@@ -30,20 +57,18 @@ export default function ReviewPage() {
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Fetch business from Firestore and log the scan
+  const goTo = (next: Step) => {
+    setDirection(STEP_INDEX[next] > STEP_INDEX[step] ? 1 : -1);
+    setStep(next);
+  };
+
   useEffect(() => {
     if (!slug) return;
-
     async function load() {
       try {
         const biz = await getBusinessBySlug(slug);
-        if (!biz) {
-          setNotFound(true);
-          return;
-        }
+        if (!biz) { setNotFound(true); return; }
         setBusiness(biz);
-
-        // Auto-create scan_logs document — fires and forgets
         const ua = navigator.userAgent;
         logScan({
           businessId: biz.id,
@@ -51,28 +76,23 @@ export default function ReviewPage() {
           deviceType: getDeviceType(ua),
           userAgent: ua,
           timestamp: new Date().toISOString(),
-        }).catch((err) => console.error('logScan failed:', err));
-      } catch (err) {
-        console.error('Failed to load business:', err);
+        }).catch(() => {});
+      } catch {
         setNotFound(true);
       }
     }
-
     load();
   }, [slug]);
 
   const handleContinueToTone = () => {
-    if (rating === 0) {
-      toast.error('Please select a star rating first');
-      return;
-    }
-    setStep('tone');
+    if (rating === 0) { toast.error('Please select a star rating first'); return; }
+    goTo('tone');
   };
 
   const handleGenerateReviews = async () => {
     if (!business) return;
     setGenerating(true);
-    setStep('reviews');
+    goTo('reviews');
     try {
       const res = await fetch('/api/generate-review', {
         method: 'POST',
@@ -89,14 +109,11 @@ export default function ReviewPage() {
       });
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
-      // API returns [{ text: "..." }, ...] — extract text strings
       const raw: Array<{ text: string } | string> = data.reviews || [];
-      setReviews(
-        raw.map((r) => (typeof r === 'string' ? r : r.text)).filter(Boolean)
-      );
+      setReviews(raw.map((r) => (typeof r === 'string' ? r : r.text)).filter(Boolean));
     } catch {
       toast.error('Failed to generate reviews. Please try again.');
-      setStep('tone');
+      goTo('tone');
     } finally {
       setGenerating(false);
     }
@@ -108,8 +125,6 @@ export default function ReviewPage() {
       await copyToClipboard(selectedReview);
       setCopied(true);
       toast.success('Review copied! Paste it on Google. 🎉');
-
-      // Auto-create review_clicks document in Firestore
       logReviewClick({
         businessId: business.id,
         rating,
@@ -117,203 +132,287 @@ export default function ReviewPage() {
         reviewText: selectedReview,
         redirected: true,
         timestamp: new Date().toISOString(),
-      }).catch((err) => console.error('logReviewClick failed:', err));
-
+      }).catch(() => {});
       setTimeout(() => {
         window.open(getGoogleReviewUrl(business.placeId), '_blank');
-        setStep('done');
-      }, 1200);
+        goTo('done');
+      }, 1000);
     } catch {
-      toast.error('Could not copy. Please copy manually.');
+      toast.error('Could not copy. Please try again.');
     }
   };
 
-  const ratingLabels = ['', 'Poor', 'Fair', 'Good', 'Great', 'Amazing!'];
-
+  // ── Not found ──
   if (notFound) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="text-6xl mb-4">🔍</div>
-          <h1 className="text-2xl font-bold text-gray-900">Business not found</h1>
-          <p className="text-gray-500 mt-2">This review page doesn&apos;t exist or is inactive.</p>
+          <div className="text-6xl mb-5">🔍</div>
+          <h1 className="text-2xl font-bold text-white">Page Not Found</h1>
+          <p className="text-white/50 mt-2 text-sm">This review page doesn&apos;t exist or has been deactivated.</p>
         </div>
       </div>
     );
   }
 
+  // ── Loading ──
   if (!business) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full"
+        />
       </div>
     );
   }
 
+  const progressPct = step === 'rating' ? 20 : step === 'tone' ? 50 : step === 'reviews' ? 80 : 100;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Business Header */}
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
+      style={{ background: 'linear-gradient(160deg, #0a0a14 0%, #0f0a1e 50%, #0a0a14 100%)' }}
+    >
+      {/* Background glows */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] pointer-events-none"
+        style={{
+          background: `radial-gradient(ellipse, ${business.brandColor}25 0%, transparent 70%)`,
+        }}
+      />
+      <div
+        className="absolute bottom-0 right-0 w-[300px] h-[300px] pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse, rgba(99,102,241,0.08) 0%, transparent 70%)' }}
+      />
+
+      <div className="w-full max-w-sm relative z-10">
+
+        {/* ── Business header ── */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-6"
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="text-center mb-7"
         >
+          {/* Logo */}
           <div className="flex justify-center mb-4">
-            {business.logoUrl ? (
-              <img
-                src={business.logoUrl}
-                alt={business.name}
-                className="w-20 h-20 rounded-2xl object-cover shadow-lg"
-              />
-            ) : (
-              <div
-                className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg"
-                style={{ backgroundColor: business.brandColor }}
-              >
-                {getInitials(business.name)}
-              </div>
-            )}
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 300, damping: 20 }}
+            >
+              {business.logoUrl ? (
+                <img
+                  src={business.logoUrl}
+                  alt={business.name}
+                  className="w-20 h-20 rounded-2xl object-cover shadow-2xl"
+                  style={{ boxShadow: `0 8px 32px ${business.brandColor}40` }}
+                />
+              ) : (
+                <div
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-2xl"
+                  style={{
+                    background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}bb)`,
+                    boxShadow: `0 8px 32px ${business.brandColor}40`,
+                  }}
+                >
+                  {getInitials(business.name)}
+                </div>
+              )}
+            </motion.div>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">{business.name}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <motion.h1
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-xl font-bold text-white"
+          >
+            {business.name}
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25 }}
+            className="text-sm text-white/40 mt-1"
+          >
             {business.category} · {business.city}
-          </p>
+          </motion.p>
         </motion.div>
 
-        {/* Card */}
+        {/* ── Card ── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-3xl shadow-xl overflow-hidden"
+          transition={{ delay: 0.15, type: 'spring', stiffness: 260, damping: 24 }}
+          className="rounded-3xl overflow-hidden"
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
+          }}
         >
           {/* Progress bar */}
-          <div className="h-1" style={{ backgroundColor: business.brandColor + '20' }}>
+          <div className="h-0.5 bg-white/5">
             <motion.div
               className="h-full rounded-full"
-              style={{ backgroundColor: business.brandColor }}
-              initial={{ width: '0%' }}
-              animate={{
-                width:
-                  step === 'rating'
-                    ? '25%'
-                    : step === 'tone'
-                    ? '50%'
-                    : step === 'reviews'
-                    ? '75%'
-                    : '100%',
-              }}
-              transition={{ duration: 0.4 }}
+              style={{ background: `linear-gradient(90deg, ${business.brandColor}, ${business.brandColor}aa)` }}
+              animate={{ width: `${progressPct}%` }}
+              transition={{ duration: 0.5, ease: 'easeInOut' }}
             />
           </div>
 
           <div className="p-6">
-            <AnimatePresence mode="wait">
-              {/* Step 1: Rating */}
+            <AnimatePresence mode="wait" custom={direction}>
+
+              {/* ── Step 1: Rating ── */}
               {step === 'rating' && (
                 <motion.div
                   key="rating"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
+                  custom={direction}
+                  variants={pageVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                  className="space-y-7"
                 >
                   <div className="text-center">
-                    <h2 className="text-xl font-bold text-gray-900">How was your experience?</h2>
-                    <p className="text-sm text-gray-500 mt-1">Tap a star to rate</p>
+                    <h2 className="text-xl font-bold text-white">How was your experience?</h2>
+                    <p className="text-sm text-white/40 mt-1.5">Tap a star to rate your visit</p>
                   </div>
+
                   <div className="flex justify-center">
-                    <StarRating value={rating} onChange={setRating} size={44} />
+                    <StarRating value={rating} onChange={setRating} size={46} color={business.brandColor} />
                   </div>
-                  {rating > 0 && (
-                    <motion.p
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center text-lg font-semibold"
-                      style={{ color: business.brandColor }}
-                    >
-                      {ratingLabels[rating]}
-                    </motion.p>
-                  )}
-                  <Button
+
+                  <AnimatePresence>
+                    {rating > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.7, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.7 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                        className="text-center"
+                      >
+                        <span className="text-3xl">{ratingConfig[rating].emoji}</span>
+                        <p
+                          className="text-base font-semibold mt-1"
+                          style={{ color: business.brandColor }}
+                        >
+                          {ratingConfig[rating].label}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <motion.button
                     onClick={handleContinueToTone}
-                    className="w-full"
-                    style={
-                      rating > 0
-                        ? {
-                            background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}dd)`,
-                          }
-                        : {}
-                    }
                     disabled={rating === 0}
+                    whileTap={{ scale: 0.97 }}
+                    whileHover={rating > 0 ? { scale: 1.02 } : {}}
+                    className="w-full py-3.5 rounded-2xl font-semibold text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-30"
+                    style={{
+                      background: rating > 0
+                        ? `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}cc)`
+                        : 'rgba(255,255,255,0.1)',
+                      boxShadow: rating > 0 ? `0 4px 20px ${business.brandColor}40` : 'none',
+                    }}
                   >
                     Continue
-                    <ChevronRight size={16} />
-                  </Button>
+                    <ChevronRight size={17} />
+                  </motion.button>
                 </motion.div>
               )}
 
-              {/* Step 2: Tone */}
+              {/* ── Step 2: Tone ── */}
               {step === 'tone' && (
                 <motion.div
                   key="tone"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
+                  custom={direction}
+                  variants={pageVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                  className="space-y-5"
                 >
                   <div className="text-center">
                     <div className="flex justify-center gap-1 mb-3">
                       {Array.from({ length: rating }).map((_, i) => (
-                        <Star key={i} size={18} className="text-amber-400 fill-amber-400" />
+                        <Star key={i} size={16} style={{ color: business.brandColor, fill: business.brandColor }} />
                       ))}
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900">Choose review style</h2>
-                    <p className="text-sm text-gray-500 mt-1">Pick the tone that feels right</p>
+                    <h2 className="text-xl font-bold text-white">Choose Your Review Style</h2>
+                    <p className="text-sm text-white/40 mt-1.5">
+                      Select the tone that best matches how you feel
+                    </p>
                   </div>
+
                   <ToneSelector value={tone} onChange={setTone} />
-                  <Button
+
+                  <motion.button
                     onClick={handleGenerateReviews}
-                    className="w-full"
+                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ scale: 1.02 }}
+                    className="w-full py-3.5 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
                     style={{
-                      background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}dd)`,
+                      background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}cc)`,
+                      boxShadow: `0 4px 20px ${business.brandColor}40`,
                     }}
                   >
                     <Sparkles size={16} />
-                    Generate Reviews
-                  </Button>
+                    Generate My Reviews
+                  </motion.button>
+
                   <button
-                    onClick={() => setStep('rating')}
-                    className="w-full text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                    onClick={() => goTo('rating')}
+                    className="w-full flex items-center justify-center gap-1.5 text-sm text-white/30 hover:text-white/60 transition-colors py-1"
                   >
-                    ← Back
+                    <ArrowLeft size={13} />
+                    Back
                   </button>
                 </motion.div>
               )}
 
-              {/* Step 3: Reviews */}
+              {/* ── Step 3: Reviews ── */}
               {step === 'reviews' && (
                 <motion.div
                   key="reviews"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
+                  custom={direction}
+                  variants={pageVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                   className="space-y-4"
                 >
                   <div className="text-center">
-                    <h2 className="text-xl font-bold text-gray-900">Pick your review</h2>
-                    <p className="text-sm text-gray-500 mt-1">Select one to copy and post</p>
+                    <h2 className="text-xl font-bold text-white">Pick Your Review</h2>
+                    <p className="text-sm text-white/40 mt-1.5">
+                      Select one, copy it, and paste it on Google
+                    </p>
                   </div>
 
                   {generating ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3 py-2">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-16 bg-gray-100 rounded-2xl animate-pulse" />
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: [0.3, 0.6, 0.3] }}
+                          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
+                          className="h-16 rounded-2xl bg-white/8"
+                        />
                       ))}
+                      <p className="text-center text-xs text-white/30 pt-1">
+                        Crafting personalised reviews…
+                      </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                       {reviews.map((review, i) => (
                         <ReviewCard
                           key={i}
@@ -328,87 +427,101 @@ export default function ReviewPage() {
 
                   {!generating && (
                     <>
-                      <Button
+                      <motion.button
                         onClick={handleCopyAndRedirect}
                         disabled={!selectedReview}
-                        className="w-full"
-                        style={
-                          selectedReview
-                            ? {
-                                background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}dd)`,
-                              }
-                            : {}
-                        }
+                        whileTap={{ scale: 0.97 }}
+                        whileHover={selectedReview ? { scale: 1.02 } : {}}
+                        className="w-full py-3.5 rounded-2xl font-semibold text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-30"
+                        style={{
+                          background: selectedReview
+                            ? `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}cc)`
+                            : 'rgba(255,255,255,0.1)',
+                          boxShadow: selectedReview ? `0 4px 20px ${business.brandColor}40` : 'none',
+                        }}
                       >
                         {copied ? <Check size={16} /> : <Copy size={16} />}
-                        {copied ? 'Copied!' : 'Copy & Review on Google'}
-                        <ExternalLink size={14} />
-                      </Button>
+                        {copied ? 'Copied!' : 'Copy & Post on Google'}
+                        {!copied && <ExternalLink size={14} />}
+                      </motion.button>
+
                       <button
-                        onClick={() => {
-                          setReviews([]);
-                          handleGenerateReviews();
-                        }}
-                        className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                        onClick={() => { setReviews([]); setSelectedReview(null); handleGenerateReviews(); }}
+                        className="w-full flex items-center justify-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors py-1"
                       >
-                        <RefreshCw size={13} />
-                        Generate new options
+                        <RefreshCw size={12} />
+                        Generate different options
                       </button>
                     </>
                   )}
                 </motion.div>
               )}
 
-              {/* Step 4: Done */}
+              {/* ── Step 4: Done ── */}
               {step === 'done' && (
                 <motion.div
                   key="done"
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={{ opacity: 0, scale: 0.92 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="text-center space-y-4 py-4"
+                  transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                  className="text-center space-y-5 py-3"
                 >
                   <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', delay: 0.1 }}
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 16, delay: 0.1 }}
                     className="text-6xl"
                   >
                     🎉
                   </motion.div>
-                  <h2 className="text-xl font-bold text-gray-900">Thank you!</h2>
-                  <p className="text-sm text-gray-500">
-                    Your review has been copied. Paste it on Google and hit submit!
-                  </p>
-                  <div className="bg-gray-50 rounded-2xl p-4 text-sm text-gray-600 text-left">
-                    <p className="font-medium text-gray-700 mb-1">Your review:</p>
-                    <p className="italic">&ldquo;{selectedReview}&rdquo;</p>
+
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Thank You!</h2>
+                    <p className="text-sm text-white/50 mt-1.5 leading-relaxed">
+                      Your review has been copied to your clipboard. Open Google and paste it to complete your review.
+                    </p>
                   </div>
-                  <a
-                    href={getGoogleReviewUrl(business.placeId)}
-                    target="_blank"
-                    rel="noopener noreferrer"
+
+                  <div
+                    className="rounded-2xl p-4 text-left"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
                   >
-                    <Button
-                      className="w-full"
+                    <p className="text-xs text-white/40 mb-1.5 font-medium uppercase tracking-wide">Your review</p>
+                    <p className="text-sm text-white/80 italic leading-relaxed">&ldquo;{selectedReview}&rdquo;</p>
+                  </div>
+
+                  <a href={getGoogleReviewUrl(business.placeId)} target="_blank" rel="noopener noreferrer">
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      whileHover={{ scale: 1.02 }}
+                      className="w-full py-3.5 rounded-2xl font-semibold text-white flex items-center justify-center gap-2"
                       style={{
-                        background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}dd)`,
+                        background: `linear-gradient(135deg, ${business.brandColor}, ${business.brandColor}cc)`,
+                        boxShadow: `0 4px 20px ${business.brandColor}40`,
                       }}
                     >
                       <ExternalLink size={16} />
                       Open Google Reviews
-                    </Button>
+                    </motion.button>
                   </a>
                 </motion.div>
               )}
+
             </AnimatePresence>
           </div>
         </motion.div>
 
         {/* Powered by */}
-        <p className="text-center text-xs text-gray-400 mt-4 flex items-center justify-center gap-1">
-          Powered by <Sparkles size={11} className="text-violet-400" />
-          <span className="text-violet-500 font-medium">ReviewKaro</span>
-        </p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-center text-xs text-white/20 mt-5 flex items-center justify-center gap-1.5"
+        >
+          Powered by
+          <Sparkles size={10} className="text-violet-400" />
+          <span className="text-violet-400/70 font-medium">ReviewKaro</span>
+        </motion.p>
       </div>
     </div>
   );
