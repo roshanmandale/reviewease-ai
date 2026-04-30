@@ -9,7 +9,6 @@ import {
   addDoc,
   writeBatch,
   serverTimestamp,
-  Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { buildReportHTML, RETENTION_DAYS } from '@/services/reportService';
@@ -48,12 +47,6 @@ function isAuthorized(req: NextRequest): boolean {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function tsToDate(ts: unknown): Date {
-  if (ts instanceof Timestamp) return ts.toDate();
-  if (typeof ts === 'string') return new Date(ts);
-  return new Date();
-}
-
 // ─── Process one business ─────────────────────────────────────────────────────
 
 async function processBusinessRetention(
@@ -80,18 +73,14 @@ async function processBusinessRetention(
       getDocs(query(collection(db, 'review_clicks'), where('businessId', '==', businessId))),
     ]);
 
-    const recentScans  = scanSnap.docs.filter((d) => tsToDate(d.data().timestamp) >= cutoff);
-    const oldScans     = scanSnap.docs.filter((d) => tsToDate(d.data().timestamp) < cutoff);
-    const recentClicks = clickSnap.docs.filter((d) => tsToDate(d.data().timestamp) >= cutoff);
-    const oldClicks    = clickSnap.docs.filter((d) => tsToDate(d.data().timestamp) < cutoff);
-
-    // Nothing old to delete — skip
-    if (oldScans.length === 0 && oldClicks.length === 0) {
+    // Skip if absolutely no data at all
+    if (scanSnap.empty && clickSnap.empty) {
       return { businessId, status: 'skipped', scansDeleted: 0, clicksDeleted: 0 };
     }
 
-    const totalScans     = recentScans.length;
-    const totalClicks    = recentClicks.length;
+    // Stats from ALL logs (full picture for the report)
+    const totalScans     = scanSnap.size;
+    const totalClicks    = clickSnap.size;
     const conversionRate = totalScans > 0 ? Math.round((totalClicks / totalScans) * 100) : 0;
 
     // Save report record first to get the ID
@@ -108,7 +97,7 @@ async function processBusinessRetention(
       generatedAt: serverTimestamp(),
     });
 
-    // Build HTML report with real report ID
+    // Build HTML report
     const html = buildReportHTML({
       businessName,
       category,
@@ -123,7 +112,6 @@ async function processBusinessRetention(
       reportId: reportRef.id,
     });
 
-    // Store as data URL (no Firebase Storage needed)
     const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
     await updateDoc(doc(db, 'reports', reportRef.id), { pdfUrl: dataUrl });
 
@@ -135,21 +123,23 @@ async function processBusinessRetention(
       updatedAt: serverTimestamp(),
     });
 
-    // Delete old logs in batches — ONLY after report is saved
-    const toDelete = [...oldScans, ...oldClicks];
-    for (let i = 0; i < toDelete.length; i += 400) {
+    // Delete ALL logs for this business — database stays clean
+    const allToDelete = [...scanSnap.docs, ...clickSnap.docs];
+    for (let i = 0; i < allToDelete.length; i += 400) {
       const batch = writeBatch(db);
-      toDelete.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+      allToDelete.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
       await batch.commit();
     }
 
-    console.log(`[cron] ✅ ${businessName}: deleted ${oldScans.length}+${oldClicks.length} logs`);
+    console.log(
+      `[cron] ✅ ${businessName}: report=${reportRef.id}, deleted all ${scanSnap.size} scans + ${clickSnap.size} clicks`
+    );
 
     return {
       businessId,
       status: 'success',
-      scansDeleted: oldScans.length,
-      clicksDeleted: oldClicks.length,
+      scansDeleted: scanSnap.size,
+      clicksDeleted: clickSnap.size,
       reportId: reportRef.id,
     };
   } catch (err) {

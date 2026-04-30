@@ -10,8 +10,7 @@ import {
   serverTimestamp,
   Timestamp,
   writeBatch,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+} from 'firebase/firestore';import { db } from '@/lib/firebase';
 import { BusinessReport } from '@/types';
 import { getScanLogs, getReviewClicks } from './logService';
 
@@ -327,8 +326,8 @@ export async function runRetentionForBusiness(
       getReviewClicks(businessId),
     ]);
 
-    const windowScans  = scans.filter((s) => new Date(s.timestamp) >= startDate);
-    const windowClicks = clicks.filter((c) => new Date(c.timestamp) >= startDate);
+    const windowScans  = scans;
+    const windowClicks = clicks;
     const totalScans   = windowScans.length;
     const totalClicks  = windowClicks.length;
     const conversionRate = totalScans > 0 ? Math.round((totalClicks / totalScans) * 100) : 0;
@@ -376,40 +375,22 @@ export async function runRetentionForBusiness(
       updatedAt: serverTimestamp(),
     });
 
-    // 7. Delete old logs ONLY after report is saved
-    await deleteOldLogs(businessId, startDate);
+    // 7. Delete ALL logs for this business after report is saved
+    const allScans  = await getDocs(query(collection(db, 'scan_logs'), where('businessId', '==', businessId)));
+    const allClicks = await getDocs(query(collection(db, 'review_clicks'), where('businessId', '==', businessId)));
+    const allDocs   = [...allScans.docs, ...allClicks.docs];
+    for (let i = 0; i < allDocs.length; i += 400) {
+      const batch = writeBatch(db);
+      allDocs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+    if (allDocs.length > 0) {
+      console.log(`[retention] Deleted all ${allDocs.length} logs for ${businessId}`);
+    }
 
     return { success: true, reportId: reportRef.id, htmlContent };
   } catch (err) {
     console.error('[retention] Failed for', businessId, err);
     return { success: false, error: (err as Error).message };
-  }
-}
-
-async function deleteOldLogs(businessId: string, cutoff: Date): Promise<void> {
-  const [scanSnap, clickSnap] = await Promise.all([
-    getDocs(query(collection(db, 'scan_logs'), where('businessId', '==', businessId))),
-    getDocs(query(collection(db, 'review_clicks'), where('businessId', '==', businessId))),
-  ]);
-
-  const toDelete = [
-    ...scanSnap.docs.filter((d) => {
-      const ts = d.data().timestamp;
-      return (ts instanceof Timestamp ? ts.toDate() : new Date(ts)) < cutoff;
-    }),
-    ...clickSnap.docs.filter((d) => {
-      const ts = d.data().timestamp;
-      return (ts instanceof Timestamp ? ts.toDate() : new Date(ts)) < cutoff;
-    }),
-  ];
-
-  for (let i = 0; i < toDelete.length; i += 400) {
-    const batch = writeBatch(db);
-    toDelete.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
-    await batch.commit();
-  }
-
-  if (toDelete.length > 0) {
-    console.log(`[retention] Deleted ${toDelete.length} old logs for ${businessId}`);
   }
 }
