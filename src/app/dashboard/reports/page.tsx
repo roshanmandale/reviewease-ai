@@ -11,6 +11,8 @@ import {
   CheckCircle,
   Building2,
   Loader2,
+  Play,
+  Shield,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useBusinesses } from '@/hooks/useBusinesses';
@@ -28,12 +30,13 @@ import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 export default function ReportsPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { businesses, loading: bizLoading } = useBusinesses(user?.uid);
 
   const [reports, setReports] = useState<BusinessReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [runningCron, setRunningCron] = useState(false);
 
   const fetchReports = async () => {
     if (!user?.uid) return;
@@ -45,6 +48,27 @@ export default function ReportsPage() {
       toast.error('Failed to load reports');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Manually trigger the cron job (admin only or for testing)
+  const handleRunCronNow = async () => {
+    setRunningCron(true);
+    try {
+      const res = await fetch('/api/cron/retention', { method: 'GET' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(
+          `Retention job complete: ${data.success} processed, ${data.totalScansDeleted + data.totalClicksDeleted} logs deleted`
+        );
+        await fetchReports();
+      } else {
+        toast.error(data.error || 'Cron job failed');
+      }
+    } catch {
+      toast.error('Failed to run retention job');
+    } finally {
+      setRunningCron(false);
     }
   };
 
@@ -81,17 +105,32 @@ export default function ReportsPage() {
   return (
     <div className="space-y-8 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
           <p className="text-gray-500 text-sm mt-1">
             PDF reports are stored permanently. Raw logs are kept for {RETENTION_DAYS} days only.
           </p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchReports}>
-          <RefreshCw size={14} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Admin / dev: manually trigger the cron */}
+          {isAdmin && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleRunCronNow}
+              loading={runningCron}
+              className="border-violet-200 text-violet-700 hover:bg-violet-50"
+            >
+              <Play size={13} />
+              Run Retention Now
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" onClick={fetchReports}>
+            <RefreshCw size={14} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Retention policy info */}
