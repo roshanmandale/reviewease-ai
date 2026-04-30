@@ -20,6 +20,9 @@ import {
   ChevronDown,
   ChevronUp,
   UserPlus,
+  Play,
+  FileText,
+  Trash2,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { getAllUsers, adminUpdateUser } from '@/services/authService';
@@ -50,6 +53,11 @@ export default function AdminPage() {
     disabled: boolean;
   }>({ role: 'owner', businessLimit: 1, plan: 'free', disabled: false });
   const [saving, setSaving] = useState(false);
+  const [runningRetention, setRunningRetention] = useState(false);
+  const [retentionResult, setRetentionResult] = useState<{
+    success: number; skipped: number; errors: number;
+    totalScansDeleted: number; totalClicksDeleted: number;
+  } | null>(null);
 
   // Guard: redirect non-admins
   useEffect(() => {
@@ -57,6 +65,30 @@ export default function AdminPage() {
       router.push('/dashboard');
     }
   }, [user, isAdmin, loading, router]);
+
+  // Run the retention/cleanup job manually
+  const handleRunRetention = async () => {
+    setRunningRetention(true);
+    setRetentionResult(null);
+    try {
+      const res = await fetch('/api/cron/retention', { method: 'GET' });
+      const data = await res.json();
+      if (res.ok) {
+        setRetentionResult(data);
+        toast.success(
+          `✅ Done! ${data.success} reports generated, ${data.totalScansDeleted + data.totalClicksDeleted} old logs deleted.`
+        );
+        // Refresh businesses to show updated nextDeletionDate
+        await fetchAll();
+      } else {
+        toast.error(data.error || 'Retention job failed');
+      }
+    } catch {
+      toast.error('Failed to run retention job. Check console.');
+    } finally {
+      setRunningRetention(false);
+    }
+  };
 
   const fetchAll = useCallback(async () => {
     setFetching(true);
@@ -199,6 +231,63 @@ export default function AdminPage() {
           </Link>
         </div>
       </div>
+
+      {/* ── Data Retention Control ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 rounded-2xl p-5"
+      >
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Trash2 size={18} className="text-violet-600" />
+            </div>
+            <div>
+              <p className="font-bold text-gray-900">Data Retention Job</p>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Generates PDF reports for all businesses, then deletes logs older than 15 days.
+                Runs automatically every day at 2 AM. Click to run manually now.
+              </p>
+              {retentionResult && (
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full font-medium">
+                    ✅ {retentionResult.success} reports generated
+                  </span>
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium">
+                    ⏭ {retentionResult.skipped} skipped (no old data)
+                  </span>
+                  <span className="text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-medium">
+                    🗑 {retentionResult.totalScansDeleted + retentionResult.totalClicksDeleted} logs deleted
+                  </span>
+                  {retentionResult.errors > 0 && (
+                    <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full font-medium">
+                      ⚠️ {retentionResult.errors} errors
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link href="/dashboard/reports">
+              <Button variant="secondary" size="sm">
+                <FileText size={14} />
+                View Reports
+              </Button>
+            </Link>
+            <Button
+              size="sm"
+              loading={runningRetention}
+              onClick={handleRunRetention}
+              className="bg-violet-600 hover:bg-violet-700"
+            >
+              <Play size={14} />
+              {runningRetention ? 'Running...' : 'Run Retention Now'}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
 
       {/* ── Platform Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">

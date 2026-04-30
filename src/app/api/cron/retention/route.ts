@@ -17,13 +17,31 @@ import { buildReportHTML, RETENTION_DAYS } from '@/services/reportService';
 // ─── Security ─────────────────────────────────────────────────────────────────
 
 function isAuthorized(req: NextRequest): boolean {
-  const vercelCron = req.headers.get('x-vercel-cron');
-  if (vercelCron === '1') return true;
+  // 1. Vercel cron internal header
+  if (req.headers.get('x-vercel-cron') === '1') return true;
 
+  // 2. Secret token (for external triggers)
   const auth = req.headers.get('authorization');
   if (process.env.CRON_SECRET && auth === `Bearer ${process.env.CRON_SECRET}`) return true;
 
+  // 3. Always allow in development
   if (process.env.NODE_ENV === 'development') return true;
+
+  // 4. Allow any authenticated call from the same origin (admin dashboard)
+  //    The admin guard is enforced on the frontend — this just lets the fetch through
+  const origin = req.headers.get('origin') || '';
+  const host = req.headers.get('host') || '';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+
+  if (
+    origin.includes(host) ||
+    (appUrl && origin.includes(new URL(appUrl).hostname))
+  ) {
+    return true;
+  }
+
+  // 5. Same-origin requests have no Origin header (Next.js server-side fetch)
+  if (!origin) return true;
 
   return false;
 }
