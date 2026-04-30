@@ -36,6 +36,11 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isAdmin, logout } = useAuth();
@@ -122,18 +127,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </Link>
       </div>
 
-      {/* PWA Install button */}
-      {installPrompt && (
-        <div className="px-3 pb-3">
-          <button
-            onClick={handleInstall}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-100"
-          >
-            <Download size={15} />
-            Add to Home Screen
-          </button>
-        </div>
-      )}
+      {/* PWA Install button — always visible on mobile, shows prompt or iOS guide */}
+      <div className="px-3 pb-3">
+        <button
+          onClick={() => {
+            if (installPrompt) {
+              handleInstall();
+            } else if (isIOS()) {
+              // Scroll to install card on dashboard
+              window.location.href = '/dashboard';
+            }
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-100"
+        >
+          <Download size={15} />
+          Add to Home Screen
+        </button>
+      </div>
 
       {/* User */}
       <div className="px-3 py-4 border-t border-gray-100">

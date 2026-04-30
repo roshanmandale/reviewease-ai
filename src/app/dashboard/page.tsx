@@ -19,6 +19,7 @@ import { getRecentActivity } from '@/services/logService';
 import { StatCard } from '@/components/ui/StatCard';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { InstallAppCard } from '@/components/ui/InstallAppCard';
 import { formatNumber } from '@/lib/utils';
 import { Shield } from 'lucide-react';
 import {
@@ -102,6 +103,9 @@ export default function DashboardPage() {
           </Link>
         </motion.div>
       )}
+
+      {/* Install App card — shown to owners on mobile */}
+      <InstallAppCard />
 
       {/* Header */}
       <div className="flex items-center justify-between">
