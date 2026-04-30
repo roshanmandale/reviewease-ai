@@ -130,7 +130,7 @@ export function HeroSection() {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="mt-10 flex flex-col sm:flex-row items-center gap-4"
         >
-          <Link href="/register">
+          <Link href="/login">
             <motion.button
               whileHover={{ scale: 1.03, boxShadow: '0 0 40px rgba(124,58,237,0.5)' }}
               whileTap={{ scale: 0.97 }}
@@ -140,18 +140,8 @@ export function HeroSection() {
                 boxShadow: '0 4px 24px rgba(124,58,237,0.35)',
               }}
             >
-              Start Free Trial
+              Sign In to Dashboard
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </motion.button>
-          </Link>
-
-          <Link href="/pricing">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 px-8 py-4 rounded-xl font-medium text-white/70 hover:text-white text-base border border-white/10 hover:border-white/20 transition-colors"
-            >
-              View Pricing
             </motion.button>
           </Link>
         </motion.div>
@@ -164,9 +154,9 @@ export function HeroSection() {
           className="mt-8 flex flex-wrap items-center justify-center gap-6"
         >
           {[
-            { icon: Shield, text: 'No credit card required' },
+            { icon: Shield, text: 'Admin-managed accounts' },
             { icon: Clock, text: 'Setup in 2 minutes' },
-            { icon: Sparkles, text: '14-day free trial' },
+            { icon: Sparkles, text: 'AI-powered reviews' },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-1.5 text-sm text-white/35">
               <Icon size={13} className="text-violet-400" />

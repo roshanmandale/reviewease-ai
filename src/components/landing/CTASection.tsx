@@ -42,7 +42,8 @@ export function CTASection() {
           transition={{ delay: 0.2 }}
           className="mt-5 text-xl text-violet-200 max-w-2xl mx-auto"
         >
-          Join hundreds of local businesses already using ReviewEase AI to turn happy customers into 5-star reviews.
+          Contact us to get your business set up on ReviewEase AI and start turning
+          happy customers into 5-star Google reviews.
         </motion.p>
 
         <motion.div
@@ -52,22 +53,13 @@ export function CTASection() {
           transition={{ delay: 0.3 }}
           className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
         >
-          <Link href="/register">
+          <Link href="/login">
             <Button
               size="lg"
               className="bg-white text-violet-700 hover:bg-gray-50 shadow-xl group border-0"
             >
-              Start Free Trial
+              Sign In to Dashboard
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
-          <Link href="/pricing">
-            <Button
-              size="lg"
-              variant="ghost"
-              className="text-white hover:bg-white/10 border border-white/30"
-            >
-              View Pricing
             </Button>
           </Link>
         </motion.div>
@@ -79,7 +71,7 @@ export function CTASection() {
           transition={{ delay: 0.4 }}
           className="mt-6 text-sm text-violet-300"
         >
-          No credit card required · 14-day free trial · Cancel anytime
+          Accounts are managed by admin · Contact us to get started
         </motion.p>
       </div>
     </section>

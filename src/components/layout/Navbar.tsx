@@ -20,7 +20,6 @@ export function Navbar() {
   const links = [
     { href: '#how-it-works', label: 'How it Works' },
     { href: '#features', label: 'Features' },
-    { href: '/pricing', label: 'Pricing' },
     { href: '#testimonials', label: 'Testimonials' },
   ];
 
@@ -65,8 +64,8 @@ export function Navbar() {
                 Sign In
               </Button>
             </Link>
-            <Link href="/register">
-              <Button size="sm">Start Free Trial</Button>
+            <Link href="/login">
+              <Button size="sm">Get Started</Button>
             </Link>
           </div>
 
@@ -99,13 +98,8 @@ export function Navbar() {
           ))}
           <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
             <Link href="/login" onClick={() => setMobileOpen(false)}>
-              <Button variant="secondary" size="sm" className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/register" onClick={() => setMobileOpen(false)}>
               <Button size="sm" className="w-full">
-                Start Free Trial
+                Sign In
               </Button>
             </Link>
           </div>
